@@ -1,0 +1,40 @@
+资源下载
+
+## 中间件
+- [tomcat](http://172.20.21.108:10087/hsbSub/program/middleware/apache-tomcat-8.5.9.tar.gz)
+- [nginx](http://172.20.21.108:10087/hsbSub/program/middleware/nginx-1.22.0.tar.gz)
+- [jdk](http://172.20.21.108:10087/hsbSub/program/middleware/jdk-8u291-linux-x64.tar.gz)
+- [elasticsearch-7.1.1](http://172.20.21.108:10087/hsbSub/program/middleware/elasticsearch-7.1.1.zip)
+- [linux-欧拉系统版erlang-23.3.4.16-1.el8安装包](http://172.20.21.108:10087/hsbSub/program/middleware/rabbitmq/linux/erlang-23.3.4.16-1.el8.x86_64-openEuler.rpm)
+- [linux-centos版erlang-23.2.7-1.el7安装包](http://172.20.21.108:10087/hsbSub/program/middleware/rabbitmq/linux/erlang-23.2.7-1.el7.x86_64-centos.rpm)
+- [linux版rabbit-3.9.15安装包](http://172.20.21.108:10087/hsbSub/program/middleware/rabbitmq/linux/rabbitmq-server-3.9.15-1.el7.noarch.rpm)
+- [windows版erlang-23.2.7安装包](http://172.20.21.108:10087/hsbSub/program/middleware/rabbitmq/windows/otp_win64_23.2.7.exe)
+- [windows版rabbit-3.9.15安装包](http://172.20.21.108:10087/hsbSub/program/middleware/rabbitmq/windows/rabbitmq-server-3.9.15.exe)
+- [linux版prometheus-2.31.1安装包](http://172.20.21.108:10087/hsbSub/program/middleware/prometheus/prometheus-2.31.1.linux-amd64.tar.gz)
+- [linux版pushgateway-1.4.2安装包](http://172.20.21.108:10087/hsbSub/program/middleware/prometheus/pushgateway-1.4.2.linux-amd64.tar.gz)
+
+## 部署辅助程序
+- [V1.2.0升级到v1.2.1转换数据程序](http://172.20.21.108:10087/hsbSub/program/middleware/hsb_serviceflow_transform-1.0.jar)
+- [jasypt-1.9.3.jar](http://172.20.21.108:10087/hsbSub/program/middleware/jasypt-1.9.3.jar)
+
+
+
+<h2 data-v-md-heading="中间件" data-v-md-line="1">中间件</h2>
+<ul data-v-md-line="2">
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/apache-tomcat-8.5.9.tar.gz" target="_blank">tomcat</a></li>
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/nginx-1.22.0.tar.gz" target="_blank">nginx</a></li>
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/jdk-8u291-linux-x64.tar.gz" target="_blank">jdk</a></li>
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/elasticsearch-7.1.1.zip" target="_blank">elasticsearch-7.1.1</a></li>
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/rabbitmq/linux/erlang-23.3.4.16-1.el8.x86_64-openEuler.rpm" target="_blank">linux-欧拉系统版erlang-23.3.4.16-1.el8安装包</a></li>
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/rabbitmq/linux/erlang-23.2.7-1.el7.x86_64-centos.rpm" target="_blank">linux-centos版erlang-23.2.7-1.el7安装包</a></li>
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/rabbitmq/linux/rabbitmq-server-3.9.15-1.el7.noarch.rpm" target="_blank">linux版rabbit-3.9.15安装包</a></li>
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/rabbitmq/windows/otp_win64_23.2.7.exe" target="_blank">windows版erlang-23.2.7安装包</a></li>
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/rabbitmq/windows/rabbitmq-server-3.9.15.exe" target="_blank">windows版rabbit-3.9.15安装包</a></li>
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/prometheus/prometheus-2.31.1.linux-amd64.tar.gz" target="_blank">linux版prometheus-2.31.1安装包</a></li>
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/prometheus/pushgateway-1.4.2.linux-amd64.tar.gz" target="_blank">linux版pushgateway-1.4.2安装包</a></li>
+</ul>
+<h2 data-v-md-heading="部署辅助程序" data-v-md-line="14">部署辅助程序</h2>
+<ul data-v-md-line="15">
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/hsb_serviceflow_transform-1.0.jar" target="_blank">V1.2.0升级到v1.2.1转换数据程序</a></li>
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/jasypt-1.9.3.jar" target="_blank">jasypt-1.9.3.jar</a></li>
+</ul>

@@ -1,0 +1,1652 @@
+V1.0
+
+
+
+> 初始版本，此文章主要内容为总线部署文档
+
+# 一、单节点部署方式：
+# 1、JDK                              
+## 1.1、获取JDK并自行安装
+[java8 下载地址(Linux版)](http://172.20.21.108:10087/hsbSub/program/middleware/jdk-8u291-linux-x64.tar.gz)
+
+# 2、中间件
+## 2.1、rabbitmq
+安装rabbitmq参见 [rabbitmq部署手册](https://docs.qq.com/doc/DVlZNTGJVZExncHpN?)
+如果需要导入元数据，执行 **2.1.1** 步骤
+### 2.1.1、在rabbitmq控制台导入元数据
+导入前
+![desc](http://172.20.21.108:10087/hsbSub/img/68c5adc3-ab09-4858-9d44-0ff18148e0b5.png)
+## 2.2、prometheus
+需要安装两个prometheus的组件，包括prometheus和pushgateway。
+### 2.2.1、安装pushgateway
+> 安装包获取地址: [linux版pushgateway-1.4.2安装包](http://172.20.21.108:10087/hsbSub/program/middleware/prometheus/pushgateway-1.4.2.linux-amd64.tar.gz)
+
+1. 将安装包复制到/usr/local目录
+2. 执行如下命令，解压安装包
+   ``` powershell
+   tar -zxvf pushgateway-1.4.2.linux-amd64.tar.gz
+   ```
+
+3. 执行如下命令
+   ``` powershell
+   cd /usr/local/pushgateway-1.4.2.linux-amd64
+   ```
+
+
+4. 执行如下命令启动
+   ``` powershell
+   nohup ./pushgateway > ./pushgateway.log &
+   ```
+5. 验证
+   ``` powershell
+   # 执行如下命令查看是否有html输出，如有则正常启动
+   curl http://127.0.0.1:9091
+   ```
+### 2.2.2、安装prometheus
+1. 安装包获取地址 提取码: 4mq3 
+2. 将安装包复制到/usr/local目录
+3. 执行如下命令，解压安装包
+   ``` powershell
+   tar -zxvf prometheus-2.31.1.linux-amd64.tar.gz
+   ```
+4. 执行如下命令，进入/usr/local/prometheus-2.31.1.linux-amd64
+   ``` powershell
+   cd /usr/local/prometheus-2.31.1.linux-amd64
+   ```
+5. 执行如下命令
+   ``` powershell
+   vim prometheus.yml
+   ```
+6. 修改prometheus.yml
+  ![desc](http://172.20.21.108:10087/hsbSub/img/835b7c76-8113-4310-8b16-0f60da038cff.png)
+7. 启动prometheus
+   ``` powershell
+   nohup ./prometheus --storage.tsdb.max-block-duration=2h --storage.tsdb.min-block-duration=2h --storage.tsdb.wal-compression --storage.tsdb.retention.time=60d --web.enable-lifecycle > ./prometheus.log &
+   ```
+8. 验证
+   ``` powershell
+   # 执行如下命令查看是否有html输出，如有则正常启动
+   curl http://127.0.0.1:9090
+   ```
+## 2.3、elasticsearch
+### 2.3.1、获取安装包
+1. [elasticsearch-7.1.1安装包](http://172.20.21.108:10087/hsbSub/program/middleware/elasticsearch-7.1.1.zip)
+2. 执行如下命令创建文件，已创建则跳过
+   ``` powershell
+   mkdir -p /application/esb/middleware
+   ```
+3. 把elasticsearch安装包复制到此目录，执行如下命令解压
+   ``` powershell
+   unzip elasticsearch-7.1.1.zip
+   ```
+
+### 2.3.2、新增用户
+1. 执行如下命令，新增es用户
+   ``` language
+   adduser es
+   ```
+2. 配置es用户的目录访问权限
+    ``` language
+   chown -R es:es elasticsearch-*.*.*
+   ```
+3. 切换用户
+    ``` language
+   su es
+   ```
+### 2.3.3、修改配置
+1. 执行如下命令
+    ``` language
+   cd /application/esb/middleware/elasticsearch-*.*.*/config
+   vim elasticsearch.yml
+   ```
+2. 修改如下配置
+    ``` powershell
+   #允许通过http端口访问 elasticsearch api 
+   http.cors.enabled: true 
+   http.cors.allow-origin: /.*/
+   ```
+4. 修改network.host 配置为 0.0.0.0
+   ![desc](http://172.20.21.108:10087/hsbSub/img/857c1b0d-71c5-4a56-a834-755583570c07.png)
+5、执行如下命令，并修改-Xms -Xmx参数
+    ``` powershell
+   vim jvm.options
+   ```
+   ![desc](http://172.20.21.108:10087/hsbSub/img/270e05d0-95d2-448c-8245-ce95b47b55bc.png)
+
+### 2.3.4、配置后台启动
+1. 执行如下命令
+    ``` powershell
+   cd /application/esb/middleware/elasticsearch-*.*.*
+   ```
+2. 执行如下命令，后台启动
+    ``` powershell
+   chmod +x modules/x-pack-ml/platform/linux-x86_64/bin/controller 
+   chmod +x bin/elasticsearch 
+   ```
+3. 启动
+    ``` powershell
+   # 切换到es用户
+   su es
+   # 后台启动
+   bin/elasticsearch -d
+   ```
+
+### 2.3.5、验证
+1. 执行如下命令验证是否启动成功
+   ``` powershell
+   curl 127.0.0.1:9200/_cluster/health?pretty
+   ```
+### 2.3.6、错误记录
+1. max file descriptors [65535] for elasticsearch process is too low
+解决方案见连接：https://blog.csdn.net/jiahao1186/article/details/90235771
+
+2. Max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
+编辑/etc/sysctl.conf并设置vm.max_map_count为 262144。之后执行命令 sysctl -p
+
+3. the default discovery settings are unsuitable for production use; at least one of [discovery.seed_hosts, discovery.seed_providers, cluster.initial_master_nodes] must be configured
+修改elasticsearch.yml 并设置 
+ 
+4. 访问健康检查接口报错 
+修改elasticsearch.yml 并设置 
+更多参考连接https://stackoverflow.com/questions/59350069/elasticsearch-start-up-error-the-default-discovery-settings-are-unsuitable-for
+
+## 3、数据库
+
+### 3.1 dump文件的导出
+
+#### 3.1.1、准备工作
+
+用管理员账号登录 PL/SQL Developer 中执行如下sql
+``` sql
+select * from dba_directories;
+```
+![desc](http://172.20.21.108:10087/hsbSub/img/a9e0a93a-cda4-4511-8dbb-5f4dbad09f60.png)
+
+确定有没有<font color='red'>**DATA_PUMP_DIR**</font>这个目录，没有则执行创建文件夹，操作如下：
+
+登录数据库服务器，执行如下命令
+``` powershell
+su - oracle
+```
+创建文件夹
+``` powershell
+mkdir -p {文件绝对路径}
+```
+
+创建逻辑名与实际路径映射关系，执行如下命令
+``` sql
+create or replace directory DATA_PUMP_DIR as '{文件绝对路径}';
+```
+
+#### 3.1.2、导出(非项目部署执行步骤)
+
+1. 登录至数据库服务器，执行如下命令
+``` powershell
+su - oracle
+```
+
+2. 执行如下脚本导出dump文件脚本
+```
+expdp 数据库管理员账号/\"数据库管理员密码\"@IP/实例 DIRECTORY=逻辑目录 dumpfile=导出文件名 logfile=日志文件名 schemas=需要导出的用户的用户名
+```
+
+注意： 上述命令默认导出表结构和表数据 ，如只需导出表结构，可以加上content=metadata_only 参数
+
+<font color='red'>**有疑问可以参考**：</font>[https://www.bbsmax.com/A/6pdDNBvLJw/](../inline)
+
+例：
+```
+expdp system/\"123456\"@127.0.0.1/PTPDB DIRECTORY=DATA_PUMP_DIR dumpfile=yhpt_cdr_test.dump logfile=yhpt_cdr_test_log.log schemas=yhpt_cdr_test;
+```
+
+### 3.2 dump文件的导入
+
+#### 3.2.1、准备工作
+
+1. 用管理员账号登录 PL/SQL Developer 中执行如下sql
+   ``` sql
+   select * from dba_directories;
+   ```
+   ![desc](http://172.20.21.108:10087/hsbSub/img/9d02dbeb-fc6d-4335-93eb-464a516c1de1.png)
+   确定有没有<font color='red'>**DATA_PUMP_DIR**</font>这个目录，没有则进行创建文件夹，操作如下：
+
+   登录数据库服务器，执行如下命令
+   ``` powershell
+   su - oracle
+   ```
+
+   创建文件夹
+   ``` powershell
+   mkdir -p {文件绝对路径}
+   ```
+
+   创建逻辑名与实际路径映射关系，执行如下命令
+   ``` powershell
+   create or replace directory DATA_PUMP_DIR as '{文件绝对路径}';
+   ```
+2. 确定dump文件
+确定需要导入的dump文件名是否为yhpt_esb.dump和yhpt_cdr.dump，如果不是请询问相关人员
+
+3. 复制dump文件到 DATA_PUMP_DIR
+将需要导入的dump文件复制到 DATA_PUMP_DIR 对应的实际目录中
+
+
+### 3.2.2 数据库初始化
+
+#### 3.2.2.1 yhpt_esb数据库初始化
+
+1. 表空间文件路径说明：这个路径在集成部安装之后的程序清单里会写明如果不知到具体路径请询问项目上相关人员或者执行如下sql
+   ``` sql
+   select t.name spacename, b.name filedir from v$tablespace t, v$datafile b where t.ts#=b.ts#;
+   ```
+   filedir列值公共的部分就为表空间文件路径
+
+2. 固定创建一个名为users的表空间，执行如下两条语句(如果有则不需要)
+   ``` sql
+   create tablespace "users" datafile '表空间文件路径' size 512M autoextend on next 256M maxsize unlimited;
+
+   create temporary tablespace users_temp tempfile '表空间文件路径' size 256M autoextend on next 128M maxsize unlimited;
+   ```
+
+##### 3.2.2.1.1、创建表空间
+
+``` sql
+-- 创建表空间
+create tablespace TBS_HIP_ESB datafile '表空间文件路径' size 512M autoextend on next 256M maxsize unlimited;
+
+-- 创建临时表空间
+create temporary tablespace TBS_HIP_ESB_TEMP tempfile '表空间文件路径' size 256M autoextend on next 128M maxsize unlimited
+```
+
+##### 3.2.2.1.2、创建用户
+``` sql
+create user yhpt_esb identified by yhpt_esb(此处为密码自行修改) DEFAULT tablespace TBS_HIP_ESB temporary tablespace TBS_HIP_ESB_TEMP account unlock;
+```
+
+##### 3.2.2.1.3、用户授权
+``` sql
+-- 赋予用户connect和resource权限
+
+grant connect,resource to yhpt_esb;
+
+-- 赋予用户创建视图的权限
+
+grant create view to yhpt_esb;
+
+-- 赋予用户创建同义词的权限
+
+grant create synonym to yhpt_esb;
+
+-- 用户授权表空间权限
+
+alter user yhpt_esb QUOTA UNLIMITED ON TBS_HIP_ESB;
+
+alter user yhpt_esb QUOTA UNLIMITED ON "USERS";
+
+-- 更改用户的表空间限额（无限制）
+
+grant unlimited tablespace to yhpt_esb;
+
+-- 给用户授权目录读写权限
+
+grant read,write on directory DATA_PUMP_DIR to 用户名;
+```
+
+##### 3.2.2.1.4、登录至数据库服务器，执行如下命令
+``` powershell
+su - oracle
+``` 
+
+##### 3.2.2.1.5、执行如下命令进行导入
+``` powershell
+impdp 管理员账号/\"管理员密码\"@127.0.0.1/sid DIRECTORY=DATA_PUMP_DIR dumpfile=yhpt_esb.dump logfile=yhpt_esb.log remap_schema=esb_medical:yhpt_esb remap_tablespace=TBS_ESB_MEDICAL:TBS_HIP_ESB
+``` 
+
+##### 3.2.2.2、yhpt_cdr数据库导入
+
+##### 3.2.2.2.1、创建表空间
+``` sql
+-- 创建表空间
+
+create tablespace TBS_HIP_CDR datafile '表空间文件路径' size 512M autoextend on next 256M maxsize unlimited;
+
+-- 创建临时表空间
+
+create temporary tablespace TBS_HIP_CDR_TEMP tempfile '表空间文件路径' size 256M autoextend on next 128M maxsize unlimited
+``` 
+
+##### 3.2.2.2.2、创建用户
+``` sql
+create user yhpt_cdr identified by yhpt_cdr(此处为密码自行修改) DEFAULT tablespace TBS_HIP_CDR temporary tablespace TBS_HIP_CDR_TEMP account unlock;
+``` 
+
+##### 3.2.2.2.3、用户授权
+``` sql
+-- 赋予用户connect和resource权限
+
+grant connect,resource to yhpt_cdr;
+
+-- 赋予用户创建视图的权限
+
+grant create view to yhpt_cdr;
+
+-- 赋予用户创建同义词的权限
+
+grant create synonym to yhpt_cdr;
+
+-- 用户授权表空间权限
+
+alter user yhpt_cdr QUOTA UNLIMITED ON TBS_HIP_CDR;
+
+alter user yhpt_cdr QUOTA UNLIMITED ON "USERS";
+
+-- 更改用户的表空间限额（无限制）
+
+grant unlimited tablespace to yhpt_cdr;
+
+-- 给用户授权目录读写权限
+
+grant read,write on directory DATA_PUMP_DIR to yhpt_cdr;
+``` 
+
+##### 3.2.2.2.4、登录至数据库服务器，执行如下命令
+``` powershell
+su - oracle
+```
+
+##### 3.2.2.2.5、执行如下命令进行导入
+```
+impdp 数据库管理员账号/\"数据库管理员密码\"@127.0.0.1/sid DIRECTORY=DATA_PUMP_DIR dumpfile=yhpt_cdr.dump logfile=yhpt_cdr.log remap_schema=yhpt_cdr_test:yhpt_cdr remap_tablespace=TBS_HIP_CDR_TEST:TBS_HIP_CDR
+```
+
+#### 3.2.3、扫尾工作
+
+<font color='red'>**1. 更新rabbitmq地址**</font>
+
+先查询一下esb_service_flow 表中的router路由rabbitmq地址是否正确，不正确需要修改
+``` sql
+update esb_service_flow set router = replace(router, '29.10.6.130', '项目现场的rabbitmq ip');
+```
+
+<font color='red'>**2在console和前端启动后，更改控制台注册的rabbit地址**</font>
+
+登录到esb控制台，修改rabbitmq的地址为项目现场的rabbitmq地址，如下图
+![desc](http://172.20.21.108:10087/hsbSub/img/82edeb64-8f65-42c8-999d-46ebeda4e5c2.png)
+
+### 3.3、impdp命令说明
+
+1. 要导入的dump文件用户名、表空间跟现场用户表空间一致使用如下命令导入
+``` powershell
+impdp 用户名/\"密码\"@IP/实例 DIRECTORY=逻辑目录 dumpfile=导入文件名 logfile=日志文件名 schema=要导入的用户名
+```
+2. 要导入的dump文件用户名、表空间跟现场用户表空间不一致使用如下命令导入
+```
+impdp 用户名/\"密码\"@IP/实例 DIRECTORY=逻辑目录 dumpfile=导入文件名 logfile=日志文件名 remap_schema=源用户名:要导入的用户名 remap_tablespace=源表空间:要导入的表空间
+```
+
+3. 相关教程
+
+导出步骤参考教程： [https://www.cnblogs.com/houzhiheng/p/14824546.html](../inline)
+
+impdp命令参数参考教程：[https://www.cnblogs.com/aozhejin/p/16028457.html](../inline)
+
+4. 查看用户的表空间
+用管理员登录，执行如下sql查看
+   ```sql
+   select username,default_tablespace from dba_users where username = '用户名'；
+   ```
+
+# 4、前端部署
+
+>[tomcat安装包](http://172.20.21.108:10087/hsbSub/program/middleware/apache-tomcat-8.5.9.tar.gz)
+
+- 4.1 登陆linux服务器，创建并进入应用安装目录
+  ``` powershell
+  mkdir -p /application/esb/project
+
+  cd /application/esb/project
+  ```
+
+- 4.2 安装tomcat
+
+  将tomcat安装包拷贝到/application/esb/project文件夹下
+  解压tomcat安装包
+  ``` powershell
+  tar -zxvf apache-tomcat-8.5.9.tar
+  ```
+  运行tomcat
+  ``` powershell
+  ./apache-tomcat-8.5.9/bin/startup.sh
+  ```
+
+- 4.3 部署前端war
+
+  获取前端war包，请咨询esb相关开发人员
+
+- 4.3.1 将前端war包上传至/application/esb/project文件夹下
+
+- 4.3.2 修改ip
+  ``` powershell
+  vim console.war
+  ```
+  搜索chunk-faceConfig找到chunk-faceConfig~xxx文件，回车进入
+  ![desc](http://172.20.21.108:10087/hsbSub/img/91ffa634-6fc5-4939-b85d-e28a506fb312.png)
+  将文件中basePath对应的ip替换成console服务器ip，保存退出
+  ![desc](http://172.20.21.108:10087/hsbSub/img/d2399523-f791-4169-a6d7-9923432f6d68.png)
+- 4.3.3 发布war包到tomcat
+  ``` powershell
+  mv /application/esb/project/console.war /application/esb/project/apache-tomcat-8.5.9/webapps/
+  ```
+
+## 5、engine部署
+
+### 5.1、获取安装包
+
+> 请咨询esb相关开发人员
+
+### 5.2、创建文件夹
+
+执行如下命令创建文件夹
+``` powershell
+mkdir -p /application/esb/project/engine
+```
+将压缩包yh-hsb-engine-version.zip将上传到/application/esb/project/engine文件夹下
+
+执行解压命令
+``` powershell
+unzip yh-hsb-engine-version.zip
+```
+
+得到如下目录结构：
+![desc](http://172.20.21.108:10087/hsbSub/img/ffd469d7-1a69-44a1-873e-8860f432c57d.png)
+
+## 5.3、进入config文件夹根据项目情况修改配置文件
+
+执行如下命令
+``` powershell
+vim app.properties
+```
+
+根据项目情况修改端口和日志文件也可不修改(如果修改了日志文件夹名称则需创建对应文件夹)
+![desc](http://172.20.21.108:10087/hsbSub/img/6533448e-da73-4c3b-802c-2c0ac8068b13.png)
+
+注意push-gateway-address的值就是指你在配置Prometheus时配置prometheus.yml文件里面写的值如下图(ip写的是安装Prometheus服务的ip)
+![desc](http://172.20.21.108:10087/hsbSub/img/5f9d4509-c976-48a5-91e7-e56584f1fe9e.png)
+
+## 5.4、启动engine
+
+进入bin文件夹
+![desc](http://172.20.21.108:10087/hsbSub/img/7aacc320-6acb-45af-ba2f-deb2bba4bf07.png)
+
+如果是windows环境直接执行start.bat
+
+linux环境执行如下命令
+``` powershell
+//给该文件夹下所有的.sh后缀文件赋予运行权限
+
+chmod 777 ./\*.sh
+
+//启动程序
+
+./start.sh
+```
+
+# 6、console部署
+
+## 6.1、获取安装包
+
+>请咨询esb相关开发人员
+
+### 6.2、创建文件夹
+
+执行如下命令
+``` powershell
+mkdir -p /application/esb/project/console
+```
+
+将压缩包yh-hsb-console-version.zip上传到/application/esb/project/
+console 文件夹下
+执行解压命令
+``` powershell
+unzip yh-hsb-console-version.zip
+```
+
+得到如下目录结构：
+![desc](http://172.20.21.108:10087/hsbSub/img/f109d6d1-ed68-4ccd-b1ba-690d0f02ff07.png)
+
+### 6.3、进入config文件夹根据项目情况修改配置文件
+
+执行如下命令
+``` powershell
+vim app.properties
+```
+
+根据项目情况修改端口和日志文件也可不修改(如果修改了日志文件夹名称则需创建对应文件夹)
+![desc](http://172.20.21.108:10087/hsbSub/img/803d617e-b9de-4f41-99e3-0af60d4225f5.png)
+
+## 6.4、启动console
+
+进入bin文件夹
+![desc](http://172.20.21.108:10087/hsbSub/img/5f71418a-fb79-4df7-bb8d-80f0777e180e.png)
+
+如果是windows环境直接执行start.bat
+
+linux环境执行如下命令
+``` powershell
+//给该文件夹下所有的.sh后缀文件赋予运行权限
+
+chmod 777 ./\*.sh
+
+//启动程序
+
+./start.sh
+```
+
+# 二、集群部署方式
+
+
+## 1、JDK
+
+### 1.1、获取JDK
+
+[java8 下载地址(Linux版)](http://172.20.21.108:10087/hsbSub/program/middleware/jdk-8u291-linux-x64.tar.gz)
+
+### 1.2、安装JDK
+
+## 2、中间件
+
+### 2.1、tomcat
+
+#### 2.1.1、获取
+
+[TOMCAT下载地址](http://172.20.21.108:10087/hsbSub/program/middleware/apache-tomcat-8.5.9.tar.gz)
+
+#### 2.1.2、安装
+
+1、执行如下命令进行
+```
+mkdir /application/esb/middleware
+```
+2.将安装包放在/application/esb/middleware后执行如下命令
+```
+tar -zxvf apache-tomcat-8.5.9.tar
+```
+3、修改配置文件
+
+进入conf文件夹下的server.xml文件
+![desc](http://172.20.21.108:10087/hsbSub/img/a4228741-8fd4-42f0-823d-618c83eb4958.png)
+
+<font color='red'注意：本文档按照tomcat为8089，进行编写，如果此端口号已经被占用，修改不了，会对之后的部署造成影响，有关联的地方都要进行相应修改</font>
+
+### 2.2、rabbitmq
+
+详情请见本手册的"一、单节点部署方式--->2、中间件--->2.1、rabbit"
+
+### 2.3、prometheus
+
+详情请见本手册的"一、单节点部署方式--->2、中间件--->2.2、prometheus"
+
+### 2.4、elasticsearch
+
+详情请见本手册的"一、单节点部署方式--->2、中间件--->2.3、elasticsearch"
+
+## 3、数据库
+
+详情请见本手册的"一、单节点部署方式--->3、数据库"
+
+## 4、前端部署
+
+1. 获取前端war
+
+   请咨询esb相关开发人员
+
+2. 将前端war包上传至/application/esb/middleware/apache-tomcat-8.5.9/webapps文` 件夹下
+
+3 . 修改ip
+```
+vim console.war
+```
+搜索chunk-faceConfig找到chunk-faceConfig~xxx文件，回车进入
+![desc](http://172.20.21.108:10087/hsbSub/img/9e427a3e-c232-4802-b0a2-c2b16c54ecea.png)
+
+修改文件中basePath，保存退出：
+![desc](http://172.20.21.108:10087/hsbSub/img/b7dca895-af3a-4116-a8f1-d32389607b69.png)
+
+修改为：
+```
+basePath: 'http://console服务器ip:端口号/console_back',
+```
+## 5、console部署
+
+### 5.1、获取安装包
+
+> 请咨询esb相关开发人员
+
+**安装：**
+
+将console_back.war放入/application/esb/middleware/apache-tomcat-8.5.9/webapps目录下
+
+### 5.2、修改配置文件
+
+在步骤5.1文件目录下进行修改配置文件，执行如下命令：
+```
+vim console_back.war
+```
+然后找到application-env-zshj.yml文件，回车进入
+![desc](http://172.20.21.108:10087/hsbSub/img/c05d555b-e60a-4657-b06a-b1b06cd74ea4.png)
+
+将此文件中对应的ip和端口，然后保存退出
+![desc](http://172.20.21.108:10087/hsbSub/img/50210050-2af2-4d2b-a565-41591f27c24a.png)
+
+修改数据库密码，使用上面的方法打开bootstrap.properties文件，用生成数据库密码的密文替换下图ENC括号内内容（生成密码方式见此文档三、数据库密码加密的2部分）。
+![desc](http://172.20.21.108:10087/hsbSub/img/c3a752fd-03cf-47b5-a86f-c9ec1a43f9fc.png)
+
+### 5.3、启动
+
+进入到此目录下
+```
+cd /application/esb/middleware
+```
+执行命令启动tomcat：
+```
+./apache-tomcat-8.5.9/bin/startup.sh
+```
+注意：此时前端和后端console都会启动
+
+## 6、engine部署
+
+### 6.1、获取安装包
+
+> 请咨询esb相关开发人员
+
+### 6.2、创建文件夹
+
+执行如下命令创建文件夹
+```
+mkdir -p /application/esb/project/engine
+
+mkdir -p /application/esb/project/engine/logs/
+```
+将jar包将上传到/application/esb/project/engine文件夹下
+
+### 6.3、修改配置文件
+
+执行如下命令
+```
+vim yhbcp-engine-project-3.3.4-RELEASE.jar
+```
+找到application-engine.yml文件，回车进入：
+![desc](http://172.20.21.108:10087/hsbSub/img/0917f001-5932-4136-b55b-280786901827.png)
+修改以下参数后，保存退出：
+![desc](http://172.20.21.108:10087/hsbSub/img/9294f609-96e5-4c83-aa24-b6a18b3bdd6d.png)
+
+找到application-env-zshj.yml文件，回车进入
+![desc](http://172.20.21.108:10087/hsbSub/img/b1e09575-706c-4fa7-8102-d871468c975f.png)
+
+修改文件中对应的ip和端口，然后保存退出
+![desc](http://172.20.21.108:10087/hsbSub/img/9ebcdf18-b4a5-4646-893c-5a01deb6612f.png)
+
+修改数据库密码，使用上面的方法打开bootstrap.properties文件，用生成数据库密码的密文替换下图ENC括号内内容（生成密码方式见此文档三、数据库密码加密的2部分）。
+![desc](http://172.20.21.108:10087/hsbSub/img/07dd7a56-2d47-48a9-8946-5aae7ffa7473.png)
+
+<font color='red'>注意：每个engine节点都要按照上述修改方案进行修改</font>
+
+## 6.4、启动engine
+
+创建启动脚本 start.sh, 并粘贴如下脚本内容，在控制台engine目录下输入./start.sh启动项目
+``` powershell
+APP_NAME=yhbcp-engine-project-3.3.4-RELEASE.jar
+
+APP_HOME=/application/esb/project/engine
+
+GC_FILE=/application/esb/project/engine/logs/gc.log
+
+tpid=`ps -ef|grep $APP_NAME|grep -v grep|grep -v kill|awk '{print $2}'`
+
+if [${tpid}]; then
+
+echo 'Stop Process...'
+
+kill -9 $tpid
+
+fi
+
+# 再次查看进程是否已结束
+
+tpid=`ps -ef|grep $APP_NAME|grep -v grep|grep -v kill|awk '{print $2}'`
+
+if [${tpid}]; then
+
+echo 'Stop Process...'
+
+kill -9 $tpid
+
+else
+
+echo 'Stop Procecss Successfully!'
+
+echo 'start Procecss...'
+
+# 启动程序，简单的启动
+
+nohup java -Djasypt.encryptor.password=yinhai@123 -Djasypt.encryptor.algorithm=PBEWithMD5AndDES -Dfile.encoding=UTF-8 -jar -Xms512m -Xmx4g -XX:SurvivorRatio=8 -XX:-UseAdaptiveSizePolicy-XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:MaxGCPauseMillis=1000 -XX:+CMSClassUnloadingEnabled -XX:+ScavengeBeforeFullGC -XX:+CMSScavengeBeforeRemark -XX:+PrintGCDetails -XX:+PrintHeapAtGC -XX:+PrintGCDateStamps -XX:+PrintTenuringDistribution -XX:-HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${APP_HOME}/logs/java_pid_%p.hprof -verbose:gc -Xloggc:$GC_FILE $APP_NAME \> engine.out & echo "engine is starting"
+
+# 动态查看日志文件
+
+tail -300f engine.out
+
+fi
+```
+
+执行如下命令
+```
+chmod 777 ./start.sh
+```
+
+执行如下命令启动engine
+```
+./start.sh
+```
+
+# 7、nginx
+
+## 7.1、获取并安装nginx
+
+> [nginx下载地址](http://172.20.21.108:10087/hsbSub/program/middleware/nginx-1.22.0.tar.gz)
+
+安装：
+
+1.进入/application/esb/middleware目录下，将压缩包放入进去后解压：
+```
+cd /application/esb/middleware
+
+tar -zxvf nginx-1.22.0.tar.gz
+```
+2.进入nginx-1.22.0文件夹，依次执行命令。
+```
+./configure --with-stream
+
+make && make install
+```
+## 7.2、修改配置
+
+找到目录/usr/local/nginx下的nginx.conf文件，并修改里面的参数：
+![desc](http://172.20.21.108:10087/hsbSub/img/32cfc8d4-602d-4361-861d-0f75f3223ae7.png)
+
+### 7.3、启动
+
+在/usr/local/nginx下依次执行以下命令以启动nginx
+```
+cd sbin
+
+./nginx
+```
+**注意：** 如果在已经启动的过程中修改了配置文件，需重新加载配置文件。在/usr/local/nginx目录下执行如下命令：
+```
+sbin/nginx -s reload
+```
+## 7.4、nginx常见问题
+
+### 1、net::ERR_CONTENT_LENGTH_MISMATCH 206
+
+前端访问页面加载不出来，f12 console出现如下错误 net::ERR_CONTENT_LENGTH_MISMATCH 206
+
+在nginx http中配置如下参数
+``` powershell
+# 增加配置 start
+
+proxy_buffer_size 128k;
+
+proxy_buffers 32 128k;
+
+proxy_busy_buffers_size 128k;
+
+# 增加配置 end
+```
+![desc](http://172.20.21.108:10087/hsbSub/img/3f8c21cb-e6a2-49ac-b006-439bbb0b494a.png)
+
+# 三、数据库密码加密
+
+## 1、配置文件修改
+
+在模块yhbcp-console-project、yhbcp-engine-project下的pom.xml文件中分别加入依赖：
+
+``` xml
+<dependency>
+  <groupId>com.github.ulisesbocchio</groupId>
+  <artifactId>jasypt-spring-boot-starter</artifactId>
+  <version>3.0.3</version>
+</dependency>
+```
+
+项目中需要将application-mybatis-oracle.yml文件中的数据库密码配置注释：
+![desc](http://172.20.21.108:10087/hsbSub/img/b1ebf87f-b12d-4ffe-a8be-13884d763e65.png)
+
+注释之后在bootstrap.properties文件中加上数据库密码配置，ENC()中的字符串是数据库密码的密文：
+![desc](http://172.20.21.108:10087/hsbSub/img/505015ac-4c40-4e89-a7bd-3db1a06269d7.png)
+
+# 2、生成数据库密码对应的密文
+
+生成密文需要借助[sypt-1.9.3.jar](http://172.20.21.108:10087/hsbSub/program/middleware/jasypt-1.9.3.jar)
+
+下载jasypt-1.9.3.jar后，在jasypt-1.9.3.jar所在目录的执行以下命令，生成数据库密码的密文：
+``` powershell
+java -cp ./jasypt-1.9.3.jar org.jasypt.intf.cli.JasyptPBEStringEncryptionCLI password=yinhai@123 algorithm=PBEWithMD5AndDES keyObtentionIterations=1000 providerName=SunJCE saltGeneratorClassName=org.jasypt.salt.RandomSaltGenerator ivGeneratorClassName=org.jasypt.iv.RandomIvGenerator input=数据库明文密码
+```
+<font color='red'>注意：**input**中为项目组实际的数据库明文密码</font>
+
+![desc](http://172.20.21.108:10087/hsbSub/img/c4466620-9cb8-458c-9400-97b3c7244492.png)
+
+执行命令之后获取到数据库密码加密后的值，再把密文填入bootstrap.properties文件ENC()中。
+
+## 3、配置启动参数
+
+配置了启动参数，才能在项目启动初始化的时候成功将数据库密码的密文解密，缺少启动参数，会导致密码错误无法连接数据库，从而启动项目失败。
+
+若加密算法使用Jasypt默认的加密算法PBEWITHHMACSHA512ANDAES_256，便不再需要特意指定加密的算法，可以去掉启动参数中的-Djasypt.encryptor.algorithm=PBEWithMD5AndDES，此时启动参数便简化为：-Djasypt.encryptor.password=yinhai@123
+
+### 3.1、本地项目配置启动参数
+
+在项目启动参数VM options中加上：-Djasypt.encryptor.password=yinhai@123 -Djasypt.encryptor.algorithm=PBEWithMD5AndDES
+![desc](http://172.20.21.108:10087/hsbSub/img/e3234085-206e-4271-9550-bff0bbcc1c12.png)
+
+## 3.2、云平台配置启动参数
+
+云平台部署项目时，也需要添加启动参数：
+```
+-Djasypt.encryptor.password=yinhai@123 -Djasypt.encryptor.algorithm=PBEWithMD5AndDES
+```
+### 3.2.1、后端打成jar包
+
+在启动文件start.sh中找到java命令，在nohup java -jar后面加上启动参数，如图所示：
+![desc](http://172.20.21.108:10087/hsbSub/img/f9d17efa-1310-402e-8b41-51bb0f2f333e.png)
+
+### 3.2.2、后端打成war包
+
+假设war包是通过tomcat进行启动，现以tomcat为例。
+
+首先找到tomcat安装路径下的bin目录，在bin目录下找到catalina.sh文件。
+
+然后在catalina.sh文件中找到JAVA_OPTS="$JAVA_OPTS -Djava.protocol.handler.pkgs=org.apache.catalina.webresources"这一行，加入启动参数，保存文件，退出编辑，重启tomcat使启动参数生效。
+
+修改内容如图所示：
+![desc](http://172.20.21.108:10087/hsbSub/img/a732f431-414d-433a-9d6f-d8924d0faf39.png)
+
+# 四、全新部署准备工作
+```
+准备工作：
+
+1. 确保中间件下载好，es、Prometheus、Prometheus gateway 、rabbitmq
+
+2. 数据库dump文件下载好
+
+3. rabbitmq元数据下载好
+
+了解现场情况：
+
+1. 确定是本地的物理机还是政务云
+
+2. 如果是政务云，确保提交的端口已经开放（哪些开放、哪些没有开放，对部署是否有影响）
+
+3. 确定能够进行部署，console、engine、前端工程的端口号
+
+部署：
+
+1、中间件部署
+
+2、确定是否有已经建好用户、表空间。
+
+3、导库
+
+收尾：
+
+给项目组提供如下文档：
+
+1、数据库账号、密码。
+
+2、console前端访问地址。账号、密码
+
+3、console ip、端口
+
+4、engine ip、端口、访问服务的地址
+
+5、怎么启动console、engine、前端工程
+```
+
+
+<blockquote data-v-md-line="3">
+<p data-v-md-line="3">初始版本，此文章主要内容为总线部署文档</p>
+</blockquote>
+<h1 data-v-md-heading="一、单节点部署方式" data-v-md-line="5">一、单节点部署方式：</h1>
+<h1 data-v-md-heading="_1、jdk" data-v-md-line="6">1、JDK</h1>
+<h2 data-v-md-heading="_1-1、获取jdk并自行安装" data-v-md-line="7">1.1、获取JDK并自行安装</h2>
+<p data-v-md-line="8"><a href="http://172.20.21.108:10087/hsbSub/program/middleware/jdk-8u291-linux-x64.tar.gz" target="_blank">java8 下载地址(Linux版)</a></p>
+<h1 data-v-md-heading="_2、中间件" data-v-md-line="10">2、中间件</h1>
+<h2 data-v-md-heading="_2-1、rabbitmq" data-v-md-line="11">2.1、rabbitmq</h2>
+<p data-v-md-line="12">安装rabbitmq参见 <a href="https://docs.qq.com/doc/DVlZNTGJVZExncHpN?" target="_blank">rabbitmq部署手册</a><br>
+如果需要导入元数据，执行 <strong>2.1.1</strong> 步骤</p>
+<h3 data-v-md-heading="_2-1-1、在rabbitmq控制台导入元数据" data-v-md-line="14">2.1.1、在rabbitmq控制台导入元数据</h3>
+<p data-v-md-line="15">导入前<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/68c5adc3-ab09-4858-9d44-0ff18148e0b5.png" alt="desc"></p>
+<h2 data-v-md-heading="_2-2、prometheus" data-v-md-line="17">2.2、prometheus</h2>
+<p data-v-md-line="18">需要安装两个prometheus的组件，包括prometheus和pushgateway。</p>
+<h3 data-v-md-heading="_2-2-1、安装pushgateway" data-v-md-line="19">2.2.1、安装pushgateway</h3>
+<blockquote data-v-md-line="20">
+<p data-v-md-line="20">安装包获取地址: <a href="http://172.20.21.108:10087/hsbSub/program/middleware/prometheus/pushgateway-1.4.2.linux-amd64.tar.gz" target="_blank">linux版pushgateway-1.4.2安装包</a></p>
+</blockquote>
+<ol data-v-md-line="22">
+<li>
+<p data-v-md-line="22">将安装包复制到/usr/local目录</p>
+</li>
+<li>
+<p data-v-md-line="23">执行如下命令，解压安装包</p>
+<div data-v-md-line="24"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>tar <span class="hljs-literal">-zxvf</span> pushgateway<span class="hljs-literal">-1</span>.<span class="hljs-number">4.2</span>.linux<span class="hljs-literal">-amd64</span>.tar.gz
+</code></pre>
+</div></div></li>
+<li>
+<p data-v-md-line="28">执行如下命令</p>
+<div data-v-md-line="29"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code><span class="hljs-built_in">cd</span> /usr/local/pushgateway<span class="hljs-literal">-1</span>.<span class="hljs-number">4.2</span>.linux<span class="hljs-literal">-amd64</span>
+</code></pre>
+</div></div></li>
+<li>
+<p data-v-md-line="34">执行如下命令启动</p>
+<div data-v-md-line="35"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>nohup ./pushgateway &gt; ./pushgateway.log &amp;
+</code></pre>
+</div></div></li>
+<li>
+<p data-v-md-line="38">验证</p>
+<div data-v-md-line="39"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code><span class="hljs-comment"># 执行如下命令查看是否有html输出，如有则正常启动</span>
+<span class="hljs-built_in">curl</span> http://<span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span>:<span class="hljs-number">9091</span>
+</code></pre>
+</div></div></li>
+</ol>
+<h3 data-v-md-heading="_2-2-2、安装prometheus" data-v-md-line="43">2.2.2、安装prometheus</h3>
+<ol data-v-md-line="44">
+<li>安装包获取地址 提取码: 4mq3</li>
+<li>将安装包复制到/usr/local目录</li>
+<li>执行如下命令，解压安装包<div data-v-md-line="47"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>tar <span class="hljs-literal">-zxvf</span> prometheus<span class="hljs-literal">-2</span>.<span class="hljs-number">31.1</span>.linux<span class="hljs-literal">-amd64</span>.tar.gz
+</code></pre>
+</div></div></li>
+<li>执行如下命令，进入/usr/local/prometheus-2.31.1.linux-amd64<div data-v-md-line="51"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code><span class="hljs-built_in">cd</span> /usr/local/prometheus<span class="hljs-literal">-2</span>.<span class="hljs-number">31.1</span>.linux<span class="hljs-literal">-amd64</span>
+</code></pre>
+</div></div></li>
+<li>执行如下命令<div data-v-md-line="55"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>vim prometheus.yml
+</code></pre>
+</div></div></li>
+<li>修改prometheus.yml<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/835b7c76-8113-4310-8b16-0f60da038cff.png" alt="desc"></li>
+<li>启动prometheus<div data-v-md-line="61"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>nohup ./prometheus -<span class="hljs-literal">-storage</span>.tsdb.max<span class="hljs-literal">-block</span><span class="hljs-literal">-duration</span>=<span class="hljs-number">2</span><span class="hljs-built_in">h</span> -<span class="hljs-literal">-storage</span>.tsdb.min<span class="hljs-literal">-block</span><span class="hljs-literal">-duration</span>=<span class="hljs-number">2</span><span class="hljs-built_in">h</span> -<span class="hljs-literal">-storage</span>.tsdb.wal<span class="hljs-literal">-compression</span> -<span class="hljs-literal">-storage</span>.tsdb.retention.time=<span class="hljs-number">60</span>d -<span class="hljs-literal">-web</span>.<span class="hljs-built_in">enable-lifecycle</span> &gt; ./prometheus.log &amp;
+</code></pre>
+</div></div></li>
+<li>验证<div data-v-md-line="65"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code><span class="hljs-comment"># 执行如下命令查看是否有html输出，如有则正常启动</span>
+<span class="hljs-built_in">curl</span> http://<span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span>:<span class="hljs-number">9090</span>
+</code></pre>
+</div></div></li>
+</ol>
+<h2 data-v-md-heading="_2-3、elasticsearch" data-v-md-line="69">2.3、elasticsearch</h2>
+<h3 data-v-md-heading="_2-3-1、获取安装包" data-v-md-line="70">2.3.1、获取安装包</h3>
+<ol data-v-md-line="71">
+<li><a href="http://172.20.21.108:10087/hsbSub/program/middleware/elasticsearch-7.1.1.zip" target="_blank">elasticsearch-7.1.1安装包</a></li>
+<li>执行如下命令创建文件，已创建则跳过<div data-v-md-line="73"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>mkdir <span class="hljs-literal">-p</span> /application/esb/middleware
+</code></pre>
+</div></div></li>
+<li>把elasticsearch安装包复制到此目录，执行如下命令解压<div data-v-md-line="77"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>unzip elastic<span class="hljs-built_in">search-7</span>.<span class="hljs-number">1.1</span>.zip
+</code></pre>
+</div></div></li>
+</ol>
+<h3 data-v-md-heading="_2-3-2、新增用户" data-v-md-line="81">2.3.2、新增用户</h3>
+<ol data-v-md-line="82">
+<li>执行如下命令，新增es用户<div data-v-md-line="83"><div class="v-md-pre-wrapper v-md-pre-wrapper-language extra-class"><pre class="v-md-hljs-language"><code>adduser es
+</code></pre>
+</div></div></li>
+<li>配置es用户的目录访问权限<div data-v-md-line="87"><div class="v-md-pre-wrapper v-md-pre-wrapper-language extra-class"><pre class="v-md-hljs-language"><code>chown -R es:es elasticsearch-*.*.*
+</code></pre>
+</div></div></li>
+<li>切换用户<div data-v-md-line="91"><div class="v-md-pre-wrapper v-md-pre-wrapper-language extra-class"><pre class="v-md-hljs-language"><code>su es
+</code></pre>
+</div></div></li>
+</ol>
+<h3 data-v-md-heading="_2-3-3、修改配置" data-v-md-line="94">2.3.3、修改配置</h3>
+<ol data-v-md-line="95">
+<li>执行如下命令<div data-v-md-line="96"><div class="v-md-pre-wrapper v-md-pre-wrapper-language extra-class"><pre class="v-md-hljs-language"><code>cd /application/esb/middleware/elasticsearch-*.*.*/config
+vim elasticsearch.yml
+</code></pre>
+</div></div></li>
+<li>修改如下配置<div data-v-md-line="101"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code><span class="hljs-comment">#允许通过http端口访问 elasticsearch api </span>
+http.cors.enabled: true 
+http.cors.allow<span class="hljs-literal">-origin</span>: /.*/
+</code></pre>
+</div></div></li>
+<li>修改network.host 配置为 0.0.0.0<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/857c1b0d-71c5-4a56-a834-755583570c07.png" alt="desc"><br>
+5、执行如下命令，并修改-Xms -Xmx参数<div data-v-md-line="109"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>vim jvm.options
+</code></pre>
+</div></div><img src="http://172.20.21.108:10087/hsbSub/img/270e05d0-95d2-448c-8245-ce95b47b55bc.png" alt="desc"></li>
+</ol>
+<h3 data-v-md-heading="_2-3-4、配置后台启动" data-v-md-line="114">2.3.4、配置后台启动</h3>
+<ol data-v-md-line="115">
+<li>执行如下命令<div data-v-md-line="116"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code><span class="hljs-built_in">cd</span> /application/esb/middleware/elasticsearch-*.*.*
+</code></pre>
+</div></div></li>
+<li>执行如下命令，后台启动<div data-v-md-line="120"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>chmod +x modules/x<span class="hljs-literal">-pack</span><span class="hljs-literal">-ml</span>/platform/linux<span class="hljs-literal">-x86_64</span>/bin/controller 
+chmod +x bin/elasticsearch 
+</code></pre>
+</div></div></li>
+<li>启动<div data-v-md-line="125"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code><span class="hljs-comment"># 切换到es用户</span>
+su es
+<span class="hljs-comment"># 后台启动</span>
+bin/elasticsearch <span class="hljs-literal">-d</span>
+</code></pre>
+</div></div></li>
+</ol>
+<h3 data-v-md-heading="_2-3-5、验证" data-v-md-line="132">2.3.5、验证</h3>
+<ol data-v-md-line="133">
+<li>执行如下命令验证是否启动成功<div data-v-md-line="134"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code><span class="hljs-built_in">curl</span> <span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span>:<span class="hljs-number">9200</span>/_cluster/health?pretty
+</code></pre>
+</div></div></li>
+</ol>
+<h3 data-v-md-heading="_2-3-6、错误记录" data-v-md-line="137">2.3.6、错误记录</h3>
+<ol data-v-md-line="138">
+<li>
+<p data-v-md-line="138">max file descriptors [65535] for elasticsearch process is too low<br>
+解决方案见连接：https://blog.csdn.net/jiahao1186/article/details/90235771</p>
+</li>
+<li>
+<p data-v-md-line="141">Max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]<br>
+编辑/etc/sysctl.conf并设置vm.max_map_count为 262144。之后执行命令 sysctl -p</p>
+</li>
+<li>
+<p data-v-md-line="144">the default discovery settings are unsuitable for production use; at least one of [discovery.seed_hosts, discovery.seed_providers, cluster.initial_master_nodes] must be configured<br>
+修改elasticsearch.yml 并设置</p>
+</li>
+<li>
+<p data-v-md-line="147">访问健康检查接口报错<br>
+修改elasticsearch.yml 并设置<br>
+更多参考连接https://stackoverflow.com/questions/59350069/elasticsearch-start-up-error-the-default-discovery-settings-are-unsuitable-for</p>
+</li>
+</ol>
+<h2 data-v-md-heading="_3、数据库" data-v-md-line="151">3、数据库</h2>
+<h3 data-v-md-heading="_3-1-dump文件的导出" data-v-md-line="153">3.1 dump文件的导出</h3>
+<h4 data-v-md-heading="_3-1-1、准备工作" data-v-md-line="155">3.1.1、准备工作</h4>
+<p data-v-md-line="157">用管理员账号登录 PL/SQL Developer 中执行如下sql</p>
+<div data-v-md-line="158"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-keyword">select</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">from</span> dba_directories;
+</code></pre>
+</div></div><p data-v-md-line="161"><img src="http://172.20.21.108:10087/hsbSub/img/a9e0a93a-cda4-4511-8dbb-5f4dbad09f60.png" alt="desc"></p>
+<p data-v-md-line="163">确定有没有<font color="red"><strong>DATA_PUMP_DIR</strong></font>这个目录，没有则执行创建文件夹，操作如下：</p>
+<p data-v-md-line="165">登录数据库服务器，执行如下命令</p>
+<div data-v-md-line="166"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>su - oracle
+</code></pre>
+</div></div><p data-v-md-line="169">创建文件夹</p>
+<div data-v-md-line="170"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>mkdir <span class="hljs-literal">-p</span> {文件绝对路径}
+</code></pre>
+</div></div><p data-v-md-line="174">创建逻辑名与实际路径映射关系，执行如下命令</p>
+<div data-v-md-line="175"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-keyword">create</span> <span class="hljs-keyword">or</span> replace directory DATA_PUMP_DIR <span class="hljs-keyword">as</span> <span class="hljs-string">&#x27;{文件绝对路径}&#x27;</span>;
+</code></pre>
+</div></div><h4 data-v-md-heading="_3-1-2、导出-非项目部署执行步骤" data-v-md-line="179">3.1.2、导出(非项目部署执行步骤)</h4>
+<ol data-v-md-line="181">
+<li>登录至数据库服务器，执行如下命令</li>
+</ol>
+<div data-v-md-line="182"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>su - oracle
+</code></pre>
+</div></div><ol start="2" data-v-md-line="186">
+<li>执行如下脚本导出dump文件脚本</li>
+</ol>
+<div data-v-md-line="187"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>expdp 数据库管理员账号/\&quot;数据库管理员密码\&quot;@IP/实例 DIRECTORY=逻辑目录 dumpfile=导出文件名 logfile=日志文件名 schemas=需要导出的用户的用户名
+</code></pre>
+</div></div><p data-v-md-line="191">注意： 上述命令默认导出表结构和表数据 ，如只需导出表结构，可以加上content=metadata_only 参数</p>
+<p data-v-md-line="193"><font color="red"><strong>有疑问可以参考</strong>：</font><a href="../inline">https://www.bbsmax.com/A/6pdDNBvLJw/</a></p>
+<p data-v-md-line="195">例：</p>
+<div data-v-md-line="196"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>expdp system/\&quot;123456\&quot;@127.0.0.1/PTPDB DIRECTORY=DATA_PUMP_DIR dumpfile=yhpt_cdr_test.dump logfile=yhpt_cdr_test_log.log schemas=yhpt_cdr_test;
+</code></pre>
+</div></div><h3 data-v-md-heading="_3-2-dump文件的导入" data-v-md-line="200">3.2 dump文件的导入</h3>
+<h4 data-v-md-heading="_3-2-1、准备工作" data-v-md-line="202">3.2.1、准备工作</h4>
+<ol data-v-md-line="204">
+<li>
+<p data-v-md-line="204">用管理员账号登录 PL/SQL Developer 中执行如下sql</p>
+<div data-v-md-line="205"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-keyword">select</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">from</span> dba_directories;
+</code></pre>
+</div></div><p data-v-md-line="208"><img src="http://172.20.21.108:10087/hsbSub/img/9d02dbeb-fc6d-4335-93eb-464a516c1de1.png" alt="desc"><br>
+确定有没有<font color="red"><strong>DATA_PUMP_DIR</strong></font>这个目录，没有则进行创建文件夹，操作如下：</p>
+<p data-v-md-line="211">登录数据库服务器，执行如下命令</p>
+<div data-v-md-line="212"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>su - oracle
+</code></pre>
+</div></div><p data-v-md-line="216">创建文件夹</p>
+<div data-v-md-line="217"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>mkdir <span class="hljs-literal">-p</span> {文件绝对路径}
+</code></pre>
+</div></div><p data-v-md-line="221">创建逻辑名与实际路径映射关系，执行如下命令</p>
+<div data-v-md-line="222"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>create or replace directory DATA_PUMP_DIR as <span class="hljs-string">&#x27;{文件绝对路径}&#x27;</span>;
+</code></pre>
+</div></div></li>
+<li>
+<p data-v-md-line="225">确定dump文件<br>
+确定需要导入的dump文件名是否为yhpt_esb.dump和yhpt_cdr.dump，如果不是请询问相关人员</p>
+</li>
+<li>
+<p data-v-md-line="228">复制dump文件到 DATA_PUMP_DIR<br>
+将需要导入的dump文件复制到 DATA_PUMP_DIR 对应的实际目录中</p>
+</li>
+</ol>
+<h3 data-v-md-heading="_3-2-2-数据库初始化" data-v-md-line="232">3.2.2 数据库初始化</h3>
+<h4 data-v-md-heading="_3-2-2-1-yhpt-esb数据库初始化" data-v-md-line="234">3.2.2.1 yhpt_esb数据库初始化</h4>
+<ol data-v-md-line="236">
+<li>
+<p data-v-md-line="236">表空间文件路径说明：这个路径在集成部安装之后的程序清单里会写明如果不知到具体路径请询问项目上相关人员或者执行如下sql</p>
+<div data-v-md-line="237"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-keyword">select</span> t.name spacename, b.name filedir <span class="hljs-keyword">from</span> v$tablespace t, v$datafile b <span class="hljs-keyword">where</span> t.ts#<span class="hljs-operator">=</span>b.ts#;
+</code></pre>
+</div></div><p data-v-md-line="240">filedir列值公共的部分就为表空间文件路径</p>
+</li>
+<li>
+<p data-v-md-line="242">固定创建一个名为users的表空间，执行如下两条语句(如果有则不需要)</p>
+<div data-v-md-line="243"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-keyword">create</span> <span class="hljs-keyword">table</span>space &quot;users&quot; datafile <span class="hljs-string">&#x27;表空间文件路径&#x27;</span> size <span class="hljs-number">512</span>M autoextend <span class="hljs-keyword">on</span> next <span class="hljs-number">256</span>M maxsize unlimited;
+
+<span class="hljs-keyword">create</span> temporary tablespace users_temp tempfile <span class="hljs-string">&#x27;表空间文件路径&#x27;</span> size <span class="hljs-number">256</span>M autoextend <span class="hljs-keyword">on</span> next <span class="hljs-number">128</span>M maxsize unlimited;
+</code></pre>
+</div></div></li>
+</ol>
+<h5 data-v-md-heading="_3-2-2-1-1、创建表空间" data-v-md-line="249">3.2.2.1.1、创建表空间</h5>
+<div data-v-md-line="251"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-comment">-- 创建表空间</span>
+<span class="hljs-keyword">create</span> <span class="hljs-keyword">table</span>space TBS_HIP_ESB datafile <span class="hljs-string">&#x27;表空间文件路径&#x27;</span> size <span class="hljs-number">512</span>M autoextend <span class="hljs-keyword">on</span> next <span class="hljs-number">256</span>M maxsize unlimited;
+
+<span class="hljs-comment">-- 创建临时表空间</span>
+<span class="hljs-keyword">create</span> temporary tablespace TBS_HIP_ESB_TEMP tempfile <span class="hljs-string">&#x27;表空间文件路径&#x27;</span> size <span class="hljs-number">256</span>M autoextend <span class="hljs-keyword">on</span> next <span class="hljs-number">128</span>M maxsize unlimited
+</code></pre>
+</div></div><h5 data-v-md-heading="_3-2-2-1-2、创建用户" data-v-md-line="259">3.2.2.1.2、创建用户</h5>
+<div data-v-md-line="260"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-keyword">create</span> <span class="hljs-keyword">user</span> yhpt_esb identified <span class="hljs-keyword">by</span> yhpt_esb(此处为密码自行修改) <span class="hljs-keyword">DEFAULT</span> tablespace TBS_HIP_ESB temporary tablespace TBS_HIP_ESB_TEMP account unlock;
+</code></pre>
+</div></div><h5 data-v-md-heading="_3-2-2-1-3、用户授权" data-v-md-line="264">3.2.2.1.3、用户授权</h5>
+<div data-v-md-line="265"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-comment">-- 赋予用户connect和resource权限</span>
+
+<span class="hljs-keyword">grant</span> <span class="hljs-keyword">connect</span>,resource <span class="hljs-keyword">to</span> yhpt_esb;
+
+<span class="hljs-comment">-- 赋予用户创建视图的权限</span>
+
+<span class="hljs-keyword">grant</span> <span class="hljs-keyword">create</span> <span class="hljs-keyword">view</span> <span class="hljs-keyword">to</span> yhpt_esb;
+
+<span class="hljs-comment">-- 赋予用户创建同义词的权限</span>
+
+<span class="hljs-keyword">grant</span> <span class="hljs-keyword">create</span> synonym <span class="hljs-keyword">to</span> yhpt_esb;
+
+<span class="hljs-comment">-- 用户授权表空间权限</span>
+
+<span class="hljs-keyword">alter</span> <span class="hljs-keyword">user</span> yhpt_esb QUOTA UNLIMITED <span class="hljs-keyword">ON</span> TBS_HIP_ESB;
+
+<span class="hljs-keyword">alter</span> <span class="hljs-keyword">user</span> yhpt_esb QUOTA UNLIMITED <span class="hljs-keyword">ON</span> &quot;USERS&quot;;
+
+<span class="hljs-comment">-- 更改用户的表空间限额（无限制）</span>
+
+<span class="hljs-keyword">grant</span> unlimited tablespace <span class="hljs-keyword">to</span> yhpt_esb;
+
+<span class="hljs-comment">-- 给用户授权目录读写权限</span>
+
+<span class="hljs-keyword">grant</span> read,write <span class="hljs-keyword">on</span> directory DATA_PUMP_DIR <span class="hljs-keyword">to</span> 用户名;
+</code></pre>
+</div></div><h5 data-v-md-heading="_3-2-2-1-4、登录至数据库服务器-执行如下命令" data-v-md-line="293">3.2.2.1.4、登录至数据库服务器，执行如下命令</h5>
+<div data-v-md-line="294"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>su - oracle
+</code></pre>
+</div></div><h5 data-v-md-heading="_3-2-2-1-5、执行如下命令进行导入" data-v-md-line="298">3.2.2.1.5、执行如下命令进行导入</h5>
+<div data-v-md-line="299"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>impdp 管理员账号/\<span class="hljs-string">&quot;管理员密码\&quot;</span>@<span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span>/sid DIRECTORY=DATA_PUMP_DIR dumpfile=yhpt_esb.dump logfile=yhpt_esb.log remap_schema=esb_medical:yhpt_esb remap_tablespace=TBS_ESB_MEDICAL:TBS_HIP_ESB
+</code></pre>
+</div></div><h5 data-v-md-heading="_3-2-2-2、yhpt-cdr数据库导入" data-v-md-line="303">3.2.2.2、yhpt_cdr数据库导入</h5>
+<h5 data-v-md-heading="_3-2-2-2-1、创建表空间" data-v-md-line="305">3.2.2.2.1、创建表空间</h5>
+<div data-v-md-line="306"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-comment">-- 创建表空间</span>
+
+<span class="hljs-keyword">create</span> <span class="hljs-keyword">table</span>space TBS_HIP_CDR datafile <span class="hljs-string">&#x27;表空间文件路径&#x27;</span> size <span class="hljs-number">512</span>M autoextend <span class="hljs-keyword">on</span> next <span class="hljs-number">256</span>M maxsize unlimited;
+
+<span class="hljs-comment">-- 创建临时表空间</span>
+
+<span class="hljs-keyword">create</span> temporary tablespace TBS_HIP_CDR_TEMP tempfile <span class="hljs-string">&#x27;表空间文件路径&#x27;</span> size <span class="hljs-number">256</span>M autoextend <span class="hljs-keyword">on</span> next <span class="hljs-number">128</span>M maxsize unlimited
+</code></pre>
+</div></div><h5 data-v-md-heading="_3-2-2-2-2、创建用户" data-v-md-line="316">3.2.2.2.2、创建用户</h5>
+<div data-v-md-line="317"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-keyword">create</span> <span class="hljs-keyword">user</span> yhpt_cdr identified <span class="hljs-keyword">by</span> yhpt_cdr(此处为密码自行修改) <span class="hljs-keyword">DEFAULT</span> tablespace TBS_HIP_CDR temporary tablespace TBS_HIP_CDR_TEMP account unlock;
+</code></pre>
+</div></div><h5 data-v-md-heading="_3-2-2-2-3、用户授权" data-v-md-line="321">3.2.2.2.3、用户授权</h5>
+<div data-v-md-line="322"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-comment">-- 赋予用户connect和resource权限</span>
+
+<span class="hljs-keyword">grant</span> <span class="hljs-keyword">connect</span>,resource <span class="hljs-keyword">to</span> yhpt_cdr;
+
+<span class="hljs-comment">-- 赋予用户创建视图的权限</span>
+
+<span class="hljs-keyword">grant</span> <span class="hljs-keyword">create</span> <span class="hljs-keyword">view</span> <span class="hljs-keyword">to</span> yhpt_cdr;
+
+<span class="hljs-comment">-- 赋予用户创建同义词的权限</span>
+
+<span class="hljs-keyword">grant</span> <span class="hljs-keyword">create</span> synonym <span class="hljs-keyword">to</span> yhpt_cdr;
+
+<span class="hljs-comment">-- 用户授权表空间权限</span>
+
+<span class="hljs-keyword">alter</span> <span class="hljs-keyword">user</span> yhpt_cdr QUOTA UNLIMITED <span class="hljs-keyword">ON</span> TBS_HIP_CDR;
+
+<span class="hljs-keyword">alter</span> <span class="hljs-keyword">user</span> yhpt_cdr QUOTA UNLIMITED <span class="hljs-keyword">ON</span> &quot;USERS&quot;;
+
+<span class="hljs-comment">-- 更改用户的表空间限额（无限制）</span>
+
+<span class="hljs-keyword">grant</span> unlimited tablespace <span class="hljs-keyword">to</span> yhpt_cdr;
+
+<span class="hljs-comment">-- 给用户授权目录读写权限</span>
+
+<span class="hljs-keyword">grant</span> read,write <span class="hljs-keyword">on</span> directory DATA_PUMP_DIR <span class="hljs-keyword">to</span> yhpt_cdr;
+</code></pre>
+</div></div><h5 data-v-md-heading="_3-2-2-2-4、登录至数据库服务器-执行如下命令" data-v-md-line="350">3.2.2.2.4、登录至数据库服务器，执行如下命令</h5>
+<div data-v-md-line="351"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>su - oracle
+</code></pre>
+</div></div><h5 data-v-md-heading="_3-2-2-2-5、执行如下命令进行导入" data-v-md-line="355">3.2.2.2.5、执行如下命令进行导入</h5>
+<div data-v-md-line="356"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>impdp 数据库管理员账号/\&quot;数据库管理员密码\&quot;@127.0.0.1/sid DIRECTORY=DATA_PUMP_DIR dumpfile=yhpt_cdr.dump logfile=yhpt_cdr.log remap_schema=yhpt_cdr_test:yhpt_cdr remap_tablespace=TBS_HIP_CDR_TEST:TBS_HIP_CDR
+</code></pre>
+</div></div><h4 data-v-md-heading="_3-2-3、扫尾工作" data-v-md-line="360">3.2.3、扫尾工作</h4>
+<p data-v-md-line="362"><font color="red"><strong>1. 更新rabbitmq地址</strong></font></p>
+<p data-v-md-line="364">先查询一下esb_service_flow 表中的router路由rabbitmq地址是否正确，不正确需要修改</p>
+<div data-v-md-line="365"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code>update esb_service_flow <span class="hljs-keyword">set</span> router <span class="hljs-operator">=</span> replace(router, <span class="hljs-string">&#x27;29.10.6.130&#x27;</span>, <span class="hljs-string">&#x27;项目现场的rabbitmq ip&#x27;</span>);
+</code></pre>
+</div></div><p data-v-md-line="369"><font color="red"><strong>2在console和前端启动后，更改控制台注册的rabbit地址</strong></font></p>
+<p data-v-md-line="371">登录到esb控制台，修改rabbitmq的地址为项目现场的rabbitmq地址，如下图<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/82edeb64-8f65-42c8-999d-46ebeda4e5c2.png" alt="desc"></p>
+<h3 data-v-md-heading="_3-3、impdp命令说明" data-v-md-line="374">3.3、impdp命令说明</h3>
+<ol data-v-md-line="376">
+<li>要导入的dump文件用户名、表空间跟现场用户表空间一致使用如下命令导入</li>
+</ol>
+<div data-v-md-line="377"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>impdp 用户名/\<span class="hljs-string">&quot;密码\&quot;</span>@IP/实例 DIRECTORY=逻辑目录 dumpfile=导入文件名 logfile=日志文件名 schema=要导入的用户名
+</code></pre>
+</div></div><ol start="2" data-v-md-line="380">
+<li>要导入的dump文件用户名、表空间跟现场用户表空间不一致使用如下命令导入</li>
+</ol>
+<div data-v-md-line="381"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>impdp 用户名/\&quot;密码\&quot;@IP/实例 DIRECTORY=逻辑目录 dumpfile=导入文件名 logfile=日志文件名 remap_schema=源用户名:要导入的用户名 remap_tablespace=源表空间:要导入的表空间
+</code></pre>
+</div></div><ol start="3" data-v-md-line="385">
+<li>相关教程</li>
+</ol>
+<p data-v-md-line="387">导出步骤参考教程： <a href="../inline">https://www.cnblogs.com/houzhiheng/p/14824546.html</a></p>
+<p data-v-md-line="389">impdp命令参数参考教程：<a href="../inline">https://www.cnblogs.com/aozhejin/p/16028457.html</a></p>
+<ol start="4" data-v-md-line="391">
+<li>查看用户的表空间<br>
+用管理员登录，执行如下sql查看<div data-v-md-line="393"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-keyword">select</span> username,default_tablespace <span class="hljs-keyword">from</span> dba_users <span class="hljs-keyword">where</span> username <span class="hljs-operator">=</span> <span class="hljs-string">&#x27;用户名&#x27;</span>；
+</code></pre>
+</div></div></li>
+</ol>
+<h1 data-v-md-heading="_4、前端部署" data-v-md-line="397">4、前端部署</h1>
+<blockquote data-v-md-line="399">
+<p data-v-md-line="399"><a href="http://172.20.21.108:10087/hsbSub/program/middleware/apache-tomcat-8.5.9.tar.gz" target="_blank">tomcat安装包</a></p>
+</blockquote>
+<ul data-v-md-line="401">
+<li>
+<p data-v-md-line="401">4.1 登陆linux服务器，创建并进入应用安装目录</p>
+<div data-v-md-line="402"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>mkdir <span class="hljs-literal">-p</span> /application/esb/project
+
+<span class="hljs-built_in">cd</span> /application/esb/project
+</code></pre>
+</div></div></li>
+<li>
+<p data-v-md-line="408">4.2 安装tomcat</p>
+<p data-v-md-line="410">将tomcat安装包拷贝到/application/esb/project文件夹下<br>
+解压tomcat安装包</p>
+<div data-v-md-line="412"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>tar <span class="hljs-literal">-zxvf</span> apache<span class="hljs-literal">-tomcat</span><span class="hljs-literal">-8</span>.<span class="hljs-number">5.9</span>.tar
+</code></pre>
+</div></div><p data-v-md-line="415">运行tomcat</p>
+<div data-v-md-line="416"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>./apache<span class="hljs-literal">-tomcat</span><span class="hljs-literal">-8</span>.<span class="hljs-number">5.9</span>/bin/startup.sh
+</code></pre>
+</div></div></li>
+<li>
+<p data-v-md-line="420">4.3 部署前端war</p>
+<p data-v-md-line="422">获取前端war包，请咨询esb相关开发人员</p>
+</li>
+<li>
+<p data-v-md-line="424">4.3.1 将前端war包上传至/application/esb/project文件夹下</p>
+</li>
+<li>
+<p data-v-md-line="426">4.3.2 修改ip</p>
+<div data-v-md-line="427"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>vim console.war
+</code></pre>
+</div></div><p data-v-md-line="430">搜索chunk-faceConfig找到chunk-faceConfig~xxx文件，回车进入<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/91ffa634-6fc5-4939-b85d-e28a506fb312.png" alt="desc"><br>
+将文件中basePath对应的ip替换成console服务器ip，保存退出<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/d2399523-f791-4169-a6d7-9923432f6d68.png" alt="desc"></p>
+</li>
+<li>
+<p data-v-md-line="434">4.3.3 发布war包到tomcat</p>
+<div data-v-md-line="435"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code><span class="hljs-built_in">mv</span> /application/esb/project/console.war /application/esb/project/apache<span class="hljs-literal">-tomcat</span><span class="hljs-literal">-8</span>.<span class="hljs-number">5.9</span>/webapps/
+</code></pre>
+</div></div></li>
+</ul>
+<h2 data-v-md-heading="_5、engine部署" data-v-md-line="439">5、engine部署</h2>
+<h3 data-v-md-heading="_5-1、获取安装包" data-v-md-line="441">5.1、获取安装包</h3>
+<blockquote data-v-md-line="443">
+<p data-v-md-line="443">请咨询esb相关开发人员</p>
+</blockquote>
+<h3 data-v-md-heading="_5-2、创建文件夹" data-v-md-line="445">5.2、创建文件夹</h3>
+<p data-v-md-line="447">执行如下命令创建文件夹</p>
+<div data-v-md-line="448"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>mkdir <span class="hljs-literal">-p</span> /application/esb/project/engine
+</code></pre>
+</div></div><p data-v-md-line="451">将压缩包yh-hsb-engine-version.zip将上传到/application/esb/project/engine文件夹下</p>
+<p data-v-md-line="453">执行解压命令</p>
+<div data-v-md-line="454"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>unzip yh<span class="hljs-literal">-hsb</span><span class="hljs-literal">-engine</span><span class="hljs-literal">-version</span>.zip
+</code></pre>
+</div></div><p data-v-md-line="458">得到如下目录结构：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/ffd469d7-1a69-44a1-873e-8860f432c57d.png" alt="desc"></p>
+<h2 data-v-md-heading="_5-3、进入config文件夹根据项目情况修改配置文件" data-v-md-line="461">5.3、进入config文件夹根据项目情况修改配置文件</h2>
+<p data-v-md-line="463">执行如下命令</p>
+<div data-v-md-line="464"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>vim app.properties
+</code></pre>
+</div></div><p data-v-md-line="468">根据项目情况修改端口和日志文件也可不修改(如果修改了日志文件夹名称则需创建对应文件夹)<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/6533448e-da73-4c3b-802c-2c0ac8068b13.png" alt="desc"></p>
+<p data-v-md-line="471">注意push-gateway-address的值就是指你在配置Prometheus时配置prometheus.yml文件里面写的值如下图(ip写的是安装Prometheus服务的ip)<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/5f9d4509-c976-48a5-91e7-e56584f1fe9e.png" alt="desc"></p>
+<h2 data-v-md-heading="_5-4、启动engine" data-v-md-line="474">5.4、启动engine</h2>
+<p data-v-md-line="476">进入bin文件夹<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/7aacc320-6acb-45af-ba2f-deb2bba4bf07.png" alt="desc"></p>
+<p data-v-md-line="479">如果是windows环境直接执行start.bat</p>
+<p data-v-md-line="481">linux环境执行如下命令</p>
+<div data-v-md-line="482"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>//给该文件夹下所有的.sh后缀文件赋予运行权限
+
+chmod <span class="hljs-number">777</span> ./\*.sh
+
+//启动程序
+
+./start.sh
+</code></pre>
+</div></div><h1 data-v-md-heading="_6、console部署" data-v-md-line="492">6、console部署</h1>
+<h2 data-v-md-heading="_6-1、获取安装包" data-v-md-line="494">6.1、获取安装包</h2>
+<blockquote data-v-md-line="496">
+<p data-v-md-line="496">请咨询esb相关开发人员</p>
+</blockquote>
+<h3 data-v-md-heading="_6-2、创建文件夹" data-v-md-line="498">6.2、创建文件夹</h3>
+<p data-v-md-line="500">执行如下命令</p>
+<div data-v-md-line="501"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>mkdir <span class="hljs-literal">-p</span> /application/esb/project/console
+</code></pre>
+</div></div><p data-v-md-line="505">将压缩包yh-hsb-console-version.zip上传到/application/esb/project/<br>
+console 文件夹下<br>
+执行解压命令</p>
+<div data-v-md-line="508"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>unzip yh<span class="hljs-literal">-hsb</span><span class="hljs-literal">-console</span><span class="hljs-literal">-version</span>.zip
+</code></pre>
+</div></div><p data-v-md-line="512">得到如下目录结构：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/f109d6d1-ed68-4ccd-b1ba-690d0f02ff07.png" alt="desc"></p>
+<h3 data-v-md-heading="_6-3、进入config文件夹根据项目情况修改配置文件" data-v-md-line="515">6.3、进入config文件夹根据项目情况修改配置文件</h3>
+<p data-v-md-line="517">执行如下命令</p>
+<div data-v-md-line="518"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>vim app.properties
+</code></pre>
+</div></div><p data-v-md-line="522">根据项目情况修改端口和日志文件也可不修改(如果修改了日志文件夹名称则需创建对应文件夹)<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/803d617e-b9de-4f41-99e3-0af60d4225f5.png" alt="desc"></p>
+<h2 data-v-md-heading="_6-4、启动console" data-v-md-line="525">6.4、启动console</h2>
+<p data-v-md-line="527">进入bin文件夹<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/5f71418a-fb79-4df7-bb8d-80f0777e180e.png" alt="desc"></p>
+<p data-v-md-line="530">如果是windows环境直接执行start.bat</p>
+<p data-v-md-line="532">linux环境执行如下命令</p>
+<div data-v-md-line="533"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>//给该文件夹下所有的.sh后缀文件赋予运行权限
+
+chmod <span class="hljs-number">777</span> ./\*.sh
+
+//启动程序
+
+./start.sh
+</code></pre>
+</div></div><h1 data-v-md-heading="二、集群部署方式" data-v-md-line="543">二、集群部署方式</h1>
+<h2 data-v-md-heading="_1、jdk-1" data-v-md-line="546">1、JDK</h2>
+<h3 data-v-md-heading="_1-1、获取jdk" data-v-md-line="548">1.1、获取JDK</h3>
+<p data-v-md-line="550"><a href="http://172.20.21.108:10087/hsbSub/program/middleware/jdk-8u291-linux-x64.tar.gz" target="_blank">java8 下载地址(Linux版)</a></p>
+<h3 data-v-md-heading="_1-2、安装jdk" data-v-md-line="552">1.2、安装JDK</h3>
+<h2 data-v-md-heading="_2、中间件-1" data-v-md-line="554">2、中间件</h2>
+<h3 data-v-md-heading="_2-1、tomcat" data-v-md-line="556">2.1、tomcat</h3>
+<h4 data-v-md-heading="_2-1-1、获取" data-v-md-line="558">2.1.1、获取</h4>
+<p data-v-md-line="560"><a href="http://172.20.21.108:10087/hsbSub/program/middleware/apache-tomcat-8.5.9.tar.gz" target="_blank">TOMCAT下载地址</a></p>
+<h4 data-v-md-heading="_2-1-2、安装" data-v-md-line="562">2.1.2、安装</h4>
+<p data-v-md-line="564">1、执行如下命令进行</p>
+<div data-v-md-line="565"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>mkdir /application/esb/middleware
+</code></pre>
+</div></div><p data-v-md-line="568">2.将安装包放在/application/esb/middleware后执行如下命令</p>
+<div data-v-md-line="569"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>tar -zxvf apache-tomcat-8.5.9.tar
+</code></pre>
+</div></div><p data-v-md-line="572">3、修改配置文件</p>
+<p data-v-md-line="574">进入conf文件夹下的server.xml文件<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/a4228741-8fd4-42f0-823d-618c83eb4958.png" alt="desc"></p>
+<p data-v-md-line="577">&lt;font color='red’注意：本文档按照tomcat为8089，进行编写，如果此端口号已经被占用，修改不了，会对之后的部署造成影响，有关联的地方都要进行相应修改</font></p>
+<h3 data-v-md-heading="_2-2、rabbitmq" data-v-md-line="579">2.2、rabbitmq</h3>
+<p data-v-md-line="581">详情请见本手册的&quot;一、单节点部署方式—&gt;2、中间件—&gt;2.1、rabbit&quot;</p>
+<h3 data-v-md-heading="_2-3、prometheus" data-v-md-line="583">2.3、prometheus</h3>
+<p data-v-md-line="585">详情请见本手册的&quot;一、单节点部署方式—&gt;2、中间件—&gt;2.2、prometheus&quot;</p>
+<h3 data-v-md-heading="_2-4、elasticsearch" data-v-md-line="587">2.4、elasticsearch</h3>
+<p data-v-md-line="589">详情请见本手册的&quot;一、单节点部署方式—&gt;2、中间件—&gt;2.3、elasticsearch&quot;</p>
+<h2 data-v-md-heading="_3、数据库-1" data-v-md-line="591">3、数据库</h2>
+<p data-v-md-line="593">详情请见本手册的&quot;一、单节点部署方式—&gt;3、数据库&quot;</p>
+<h2 data-v-md-heading="_4、前端部署-1" data-v-md-line="595">4、前端部署</h2>
+<ol data-v-md-line="597">
+<li>
+<p data-v-md-line="597">获取前端war</p>
+<p data-v-md-line="599">请咨询esb相关开发人员</p>
+</li>
+<li>
+<p data-v-md-line="601">将前端war包上传至/application/esb/middleware/apache-tomcat-8.5.9/webapps文` 件夹下</p>
+</li>
+</ol>
+<p data-v-md-line="603">3 . 修改ip</p>
+<div data-v-md-line="604"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>vim console.war
+</code></pre>
+</div></div><p data-v-md-line="607">搜索chunk-faceConfig找到chunk-faceConfig~xxx文件，回车进入<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/9e427a3e-c232-4802-b0a2-c2b16c54ecea.png" alt="desc"></p>
+<p data-v-md-line="610">修改文件中basePath，保存退出：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/b7dca895-af3a-4116-a8f1-d32389607b69.png" alt="desc"></p>
+<p data-v-md-line="613">修改为：</p>
+<div data-v-md-line="614"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>basePath: 'http://console服务器ip:端口号/console_back',
+</code></pre>
+</div></div><h2 data-v-md-heading="_5、console部署" data-v-md-line="617">5、console部署</h2>
+<h3 data-v-md-heading="_5-1、获取安装包-1" data-v-md-line="619">5.1、获取安装包</h3>
+<blockquote data-v-md-line="621">
+<p data-v-md-line="621">请咨询esb相关开发人员</p>
+</blockquote>
+<p data-v-md-line="623"><strong>安装：</strong></p>
+<p data-v-md-line="625">将console_back.war放入/application/esb/middleware/apache-tomcat-8.5.9/webapps目录下</p>
+<h3 data-v-md-heading="_5-2、修改配置文件" data-v-md-line="627">5.2、修改配置文件</h3>
+<p data-v-md-line="629">在步骤5.1文件目录下进行修改配置文件，执行如下命令：</p>
+<div data-v-md-line="630"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>vim console_back.war
+</code></pre>
+</div></div><p data-v-md-line="633">然后找到application-env-zshj.yml文件，回车进入<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/c05d555b-e60a-4657-b06a-b1b06cd74ea4.png" alt="desc"></p>
+<p data-v-md-line="636">将此文件中对应的ip和端口，然后保存退出<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/50210050-2af2-4d2b-a565-41591f27c24a.png" alt="desc"></p>
+<p data-v-md-line="639">修改数据库密码，使用上面的方法打开bootstrap.properties文件，用生成数据库密码的密文替换下图ENC括号内内容（生成密码方式见此文档三、数据库密码加密的2部分）。<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/c3a752fd-03cf-47b5-a86f-c9ec1a43f9fc.png" alt="desc"></p>
+<h3 data-v-md-heading="_5-3、启动" data-v-md-line="642">5.3、启动</h3>
+<p data-v-md-line="644">进入到此目录下</p>
+<div data-v-md-line="645"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>cd /application/esb/middleware
+</code></pre>
+</div></div><p data-v-md-line="648">执行命令启动tomcat：</p>
+<div data-v-md-line="649"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>./apache-tomcat-8.5.9/bin/startup.sh
+</code></pre>
+</div></div><p data-v-md-line="652">注意：此时前端和后端console都会启动</p>
+<h2 data-v-md-heading="_6、engine部署" data-v-md-line="654">6、engine部署</h2>
+<h3 data-v-md-heading="_6-1、获取安装包-1" data-v-md-line="656">6.1、获取安装包</h3>
+<blockquote data-v-md-line="658">
+<p data-v-md-line="658">请咨询esb相关开发人员</p>
+</blockquote>
+<h3 data-v-md-heading="_6-2、创建文件夹-1" data-v-md-line="660">6.2、创建文件夹</h3>
+<p data-v-md-line="662">执行如下命令创建文件夹</p>
+<div data-v-md-line="663"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>mkdir -p /application/esb/project/engine
+
+mkdir -p /application/esb/project/engine/logs/
+</code></pre>
+</div></div><p data-v-md-line="668">将jar包将上传到/application/esb/project/engine文件夹下</p>
+<h3 data-v-md-heading="_6-3、修改配置文件" data-v-md-line="670">6.3、修改配置文件</h3>
+<p data-v-md-line="672">执行如下命令</p>
+<div data-v-md-line="673"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>vim yhbcp-engine-project-3.3.4-RELEASE.jar
+</code></pre>
+</div></div><p data-v-md-line="676">找到application-engine.yml文件，回车进入：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/0917f001-5932-4136-b55b-280786901827.png" alt="desc"><br>
+修改以下参数后，保存退出：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/9294f609-96e5-4c83-aa24-b6a18b3bdd6d.png" alt="desc"></p>
+<p data-v-md-line="681">找到application-env-zshj.yml文件，回车进入<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/b1e09575-706c-4fa7-8102-d871468c975f.png" alt="desc"></p>
+<p data-v-md-line="684">修改文件中对应的ip和端口，然后保存退出<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/9ebcdf18-b4a5-4646-893c-5a01deb6612f.png" alt="desc"></p>
+<p data-v-md-line="687">修改数据库密码，使用上面的方法打开bootstrap.properties文件，用生成数据库密码的密文替换下图ENC括号内内容（生成密码方式见此文档三、数据库密码加密的2部分）。<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/07dd7a56-2d47-48a9-8946-5aae7ffa7473.png" alt="desc"></p>
+<p data-v-md-line="690"><font color="red">注意：每个engine节点都要按照上述修改方案进行修改</font></p>
+<h2 data-v-md-heading="_6-4、启动engine" data-v-md-line="692">6.4、启动engine</h2>
+<p data-v-md-line="694">创建启动脚本 start.sh, 并粘贴如下脚本内容，在控制台engine目录下输入./start.sh启动项目</p>
+<div data-v-md-line="695"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>APP_NAME=yhbcp<span class="hljs-literal">-engine</span><span class="hljs-literal">-project</span><span class="hljs-literal">-3</span>.<span class="hljs-number">3.4</span><span class="hljs-literal">-RELEASE</span>.jar
+
+APP_HOME=/application/esb/project/engine
+
+GC_FILE=/application/esb/project/engine/logs/gc.log
+
+tpid=`ps <span class="hljs-literal">-ef</span>|grep <span class="hljs-variable">$APP_NAME</span>|grep <span class="hljs-literal">-v</span> grep|grep <span class="hljs-literal">-v</span> <span class="hljs-built_in">kill</span>|awk <span class="hljs-string">&#x27;{print $2}&#x27;</span>`
+
+<span class="hljs-keyword">if</span> [<span class="hljs-variable">$</span>{<span class="hljs-type">tpid</span>}]; then
+
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;Stop Process...&#x27;</span>
+
+<span class="hljs-built_in">kill</span> <span class="hljs-literal">-9</span> <span class="hljs-variable">$tpid</span>
+
+fi
+
+<span class="hljs-comment"># 再次查看进程是否已结束</span>
+
+tpid=`ps <span class="hljs-literal">-ef</span>|grep <span class="hljs-variable">$APP_NAME</span>|grep <span class="hljs-literal">-v</span> grep|grep <span class="hljs-literal">-v</span> <span class="hljs-built_in">kill</span>|awk <span class="hljs-string">&#x27;{print $2}&#x27;</span>`
+
+<span class="hljs-keyword">if</span> [<span class="hljs-variable">$</span>{<span class="hljs-type">tpid</span>}]; then
+
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;Stop Process...&#x27;</span>
+
+<span class="hljs-built_in">kill</span> <span class="hljs-literal">-9</span> <span class="hljs-variable">$tpid</span>
+
+<span class="hljs-keyword">else</span>
+
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;Stop Procecss Successfully!&#x27;</span>
+
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;start Procecss...&#x27;</span>
+
+<span class="hljs-comment"># 启动程序，简单的启动</span>
+
+nohup java <span class="hljs-literal">-Djasypt</span>.encryptor.password=yinhai@<span class="hljs-number">123</span> <span class="hljs-literal">-Djasypt</span>.encryptor.algorithm=PBEWithMD5AndDES <span class="hljs-literal">-Dfile</span>.encoding=UTF<span class="hljs-literal">-8</span> <span class="hljs-literal">-jar</span> <span class="hljs-literal">-Xms512m</span> <span class="hljs-literal">-Xmx4g</span> <span class="hljs-literal">-XX</span>:SurvivorRatio=<span class="hljs-number">8</span> <span class="hljs-literal">-XX</span>:<span class="hljs-literal">-UseAdaptiveSizePolicy</span><span class="hljs-literal">-XX</span>:+UseParNewGC <span class="hljs-literal">-XX</span>:+UseConcMarkSweepGC <span class="hljs-literal">-XX</span>:MaxGCPauseMillis=<span class="hljs-number">1000</span> <span class="hljs-literal">-XX</span>:+CMSClassUnloadingEnabled <span class="hljs-literal">-XX</span>:+ScavengeBeforeFullGC <span class="hljs-literal">-XX</span>:+CMSScavengeBeforeRemark <span class="hljs-literal">-XX</span>:+PrintGCDetails <span class="hljs-literal">-XX</span>:+PrintHeapAtGC <span class="hljs-literal">-XX</span>:+PrintGCDateStamps <span class="hljs-literal">-XX</span>:+PrintTenuringDistribution <span class="hljs-literal">-XX</span>:<span class="hljs-literal">-HeapDumpOnOutOfMemoryError</span> <span class="hljs-literal">-XX</span>:HeapDumpPath=<span class="hljs-variable">$</span>{APP_HOME}/logs/java_pid_%p.hprof <span class="hljs-literal">-verbose</span>:<span class="hljs-built_in">gc</span> <span class="hljs-literal">-Xloggc</span>:<span class="hljs-variable">$GC_FILE</span> <span class="hljs-variable">$APP_NAME</span> \&gt; engine.out &amp; <span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;engine is starting&quot;</span>
+
+<span class="hljs-comment"># 动态查看日志文件</span>
+
+tail <span class="hljs-literal">-300f</span> engine.out
+
+fi
+</code></pre>
+</div></div><p data-v-md-line="739">执行如下命令</p>
+<div data-v-md-line="740"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>chmod 777 ./start.sh
+</code></pre>
+</div></div><p data-v-md-line="744">执行如下命令启动engine</p>
+<div data-v-md-line="745"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>./start.sh
+</code></pre>
+</div></div><h1 data-v-md-heading="_7、nginx" data-v-md-line="749">7、nginx</h1>
+<h2 data-v-md-heading="_7-1、获取并安装nginx" data-v-md-line="751">7.1、获取并安装nginx</h2>
+<blockquote data-v-md-line="753">
+<p data-v-md-line="753"><a href="http://172.20.21.108:10087/hsbSub/program/middleware/nginx-1.22.0.tar.gz" target="_blank">nginx下载地址</a></p>
+</blockquote>
+<p data-v-md-line="755">安装：</p>
+<p data-v-md-line="757">1.进入/application/esb/middleware目录下，将压缩包放入进去后解压：</p>
+<div data-v-md-line="758"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>cd /application/esb/middleware
+
+tar -zxvf nginx-1.22.0.tar.gz
+</code></pre>
+</div></div><p data-v-md-line="763">2.进入nginx-1.22.0文件夹，依次执行命令。</p>
+<div data-v-md-line="764"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>./configure --with-stream
+
+make &amp;&amp; make install
+</code></pre>
+</div></div><h2 data-v-md-heading="_7-2、修改配置" data-v-md-line="769">7.2、修改配置</h2>
+<p data-v-md-line="771">找到目录/usr/local/nginx下的nginx.conf文件，并修改里面的参数：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/32cfc8d4-602d-4361-861d-0f75f3223ae7.png" alt="desc"></p>
+<h3 data-v-md-heading="_7-3、启动" data-v-md-line="774">7.3、启动</h3>
+<p data-v-md-line="776">在/usr/local/nginx下依次执行以下命令以启动nginx</p>
+<div data-v-md-line="777"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>cd sbin
+
+./nginx
+</code></pre>
+</div></div><p data-v-md-line="782"><strong>注意：</strong> 如果在已经启动的过程中修改了配置文件，需重新加载配置文件。在/usr/local/nginx目录下执行如下命令：</p>
+<div data-v-md-line="783"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>sbin/nginx -s reload
+</code></pre>
+</div></div><h2 data-v-md-heading="_7-4、nginx常见问题" data-v-md-line="786">7.4、nginx常见问题</h2>
+<h3 data-v-md-heading="_1、net-err-content-length-mismatch-206" data-v-md-line="788">1、net::ERR_CONTENT_LENGTH_MISMATCH 206</h3>
+<p data-v-md-line="790">前端访问页面加载不出来，f12 console出现如下错误 net::ERR_CONTENT_LENGTH_MISMATCH 206</p>
+<p data-v-md-line="792">在nginx http中配置如下参数</p>
+<div data-v-md-line="793"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code><span class="hljs-comment"># 增加配置 start</span>
+
+proxy_buffer_size <span class="hljs-number">128</span>k;
+
+proxy_buffers <span class="hljs-number">32</span> <span class="hljs-number">128</span>k;
+
+proxy_busy_buffers_size <span class="hljs-number">128</span>k;
+
+<span class="hljs-comment"># 增加配置 end</span>
+</code></pre>
+</div></div><p data-v-md-line="804"><img src="http://172.20.21.108:10087/hsbSub/img/3f8c21cb-e6a2-49ac-b006-439bbb0b494a.png" alt="desc"></p>
+<h1 data-v-md-heading="三、数据库密码加密" data-v-md-line="806">三、数据库密码加密</h1>
+<h2 data-v-md-heading="_1、配置文件修改" data-v-md-line="808">1、配置文件修改</h2>
+<p data-v-md-line="810">在模块yhbcp-console-project、yhbcp-engine-project下的pom.xml文件中分别加入依赖：</p>
+<div data-v-md-line="812"><div class="v-md-pre-wrapper v-md-pre-wrapper-xml extra-class"><pre class="v-md-hljs-xml"><code><span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.github.ulisesbocchio<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>jasypt-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>3.0.3<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span>
+</code></pre>
+</div></div><p data-v-md-line="820">项目中需要将application-mybatis-oracle.yml文件中的数据库密码配置注释：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/b1ebf87f-b12d-4ffe-a8be-13884d763e65.png" alt="desc"></p>
+<p data-v-md-line="823">注释之后在bootstrap.properties文件中加上数据库密码配置，ENC()中的字符串是数据库密码的密文：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/505015ac-4c40-4e89-a7bd-3db1a06269d7.png" alt="desc"></p>
+<h1 data-v-md-heading="_2、生成数据库密码对应的密文" data-v-md-line="826">2、生成数据库密码对应的密文</h1>
+<p data-v-md-line="828">生成密文需要借助<a href="http://172.20.21.108:10087/hsbSub/program/middleware/jasypt-1.9.3.jar" target="_blank">sypt-1.9.3.jar</a></p>
+<p data-v-md-line="830">下载jasypt-1.9.3.jar后，在jasypt-1.9.3.jar所在目录的执行以下命令，生成数据库密码的密文：</p>
+<div data-v-md-line="831"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>java <span class="hljs-literal">-cp</span> ./jasypt<span class="hljs-literal">-1</span>.<span class="hljs-number">9.3</span>.jar org.jasypt.intf.cli.JasyptPBEStringEncryptionCLI password=yinhai@<span class="hljs-number">123</span> algorithm=PBEWithMD5AndDES keyObtentionIterations=<span class="hljs-number">1000</span> providerName=SunJCE saltGeneratorClassName=org.jasypt.salt.RandomSaltGenerator ivGeneratorClassName=org.jasypt.iv.RandomIvGenerator input=数据库明文密码
+</code></pre>
+</div></div><p data-v-md-line="834"><font color="red">注意：<strong>input</strong>中为项目组实际的数据库明文密码</font></p>
+<p data-v-md-line="836"><img src="http://172.20.21.108:10087/hsbSub/img/c4466620-9cb8-458c-9400-97b3c7244492.png" alt="desc"></p>
+<p data-v-md-line="838">执行命令之后获取到数据库密码加密后的值，再把密文填入bootstrap.properties文件ENC()中。</p>
+<h2 data-v-md-heading="_3、配置启动参数" data-v-md-line="840">3、配置启动参数</h2>
+<p data-v-md-line="842">配置了启动参数，才能在项目启动初始化的时候成功将数据库密码的密文解密，缺少启动参数，会导致密码错误无法连接数据库，从而启动项目失败。</p>
+<p data-v-md-line="844">若加密算法使用Jasypt默认的加密算法PBEWITHHMACSHA512ANDAES_256，便不再需要特意指定加密的算法，可以去掉启动参数中的-Djasypt.encryptor.algorithm=PBEWithMD5AndDES，此时启动参数便简化为：-Djasypt.encryptor.password=yinhai@123</p>
+<h3 data-v-md-heading="_3-1、本地项目配置启动参数" data-v-md-line="846">3.1、本地项目配置启动参数</h3>
+<p data-v-md-line="848">在项目启动参数VM options中加上：-Djasypt.encryptor.password=yinhai@123 -Djasypt.encryptor.algorithm=PBEWithMD5AndDES<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/e3234085-206e-4271-9550-bff0bbcc1c12.png" alt="desc"></p>
+<h2 data-v-md-heading="_3-2、云平台配置启动参数" data-v-md-line="851">3.2、云平台配置启动参数</h2>
+<p data-v-md-line="853">云平台部署项目时，也需要添加启动参数：</p>
+<div data-v-md-line="854"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>-Djasypt.encryptor.password=yinhai@123 -Djasypt.encryptor.algorithm=PBEWithMD5AndDES
+</code></pre>
+</div></div><h3 data-v-md-heading="_3-2-1、后端打成jar包" data-v-md-line="857">3.2.1、后端打成jar包</h3>
+<p data-v-md-line="859">在启动文件start.sh中找到java命令，在nohup java -jar后面加上启动参数，如图所示：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/f9d17efa-1310-402e-8b41-51bb0f2f333e.png" alt="desc"></p>
+<h3 data-v-md-heading="_3-2-2、后端打成war包" data-v-md-line="862">3.2.2、后端打成war包</h3>
+<p data-v-md-line="864">假设war包是通过tomcat进行启动，现以tomcat为例。</p>
+<p data-v-md-line="866">首先找到tomcat安装路径下的bin目录，在bin目录下找到catalina.sh文件。</p>
+<p data-v-md-line="868">然后在catalina.sh文件中找到JAVA_OPTS=&quot;$JAVA_OPTS -Djava.protocol.handler.pkgs=org.apache.catalina.webresources&quot;这一行，加入启动参数，保存文件，退出编辑，重启tomcat使启动参数生效。</p>
+<p data-v-md-line="870">修改内容如图所示：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/a732f431-414d-433a-9d6f-d8924d0faf39.png" alt="desc"></p>
+<h1 data-v-md-heading="四、全新部署准备工作" data-v-md-line="873">四、全新部署准备工作</h1>
+<div data-v-md-line="874"><div class="v-md-pre-wrapper v-md-pre-wrapper- extra-class"><pre class="v-md-hljs-"><code>准备工作：
+
+1. 确保中间件下载好，es、Prometheus、Prometheus gateway 、rabbitmq
+
+2. 数据库dump文件下载好
+
+3. rabbitmq元数据下载好
+
+了解现场情况：
+
+1. 确定是本地的物理机还是政务云
+
+2. 如果是政务云，确保提交的端口已经开放（哪些开放、哪些没有开放，对部署是否有影响）
+
+3. 确定能够进行部署，console、engine、前端工程的端口号
+
+部署：
+
+1、中间件部署
+
+2、确定是否有已经建好用户、表空间。
+
+3、导库
+
+收尾：
+
+给项目组提供如下文档：
+
+1、数据库账号、密码。
+
+2、console前端访问地址。账号、密码
+
+3、console ip、端口
+
+4、engine ip、端口、访问服务的地址
+
+5、怎么启动console、engine、前端工程
+</code></pre>
+</div></div>

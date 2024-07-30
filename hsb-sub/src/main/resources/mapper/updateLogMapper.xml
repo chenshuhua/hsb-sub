@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yinhai.hsbsub.repository.UpdateLogMapper">
+
+    <resultMap id="updateLog" type="com.yinhai.hsbsub.entity.UpdateLog">
+        <result property="id" column="id" />
+        <result property="programVersion" column="PROGRAM_VERSION" />
+        <result property="programFileUrl" column="PROGRAM_FILE_URI" />
+        <result property="logMd" column="LOG_MD" />
+        <result property="logHtml" column="LOG_HTML" />
+        <result property="modifyTime" column="MODIFY_TIME" />
+        <result property="modifierId" column="MODIFIER_ID" />
+    </resultMap>
+
+    <insert id="addUpdateLog" parameterType="com.yinhai.hsbsub.entity.UpdateLog">
+        insert into sub_update_log (PROGRAM_VERSION, PROGRAM_FILE_URI, LOG_MD, LOG_HTML, MODIFY_TIME, MODIFIER_ID)
+        values ( #{programVersion ,jdbcType=VARCHAR}, #{programFileUrl ,jdbcType=VARCHAR}, #{logMd ,jdbcType=CLOB}, #{logHtml ,jdbcType=CLOB}, #{modifyTime, jdbcType=DATE}, #{modifierId, jdbcType=VARCHAR } )
+    </insert>
+
+    <delete id="deleteLogById" parameterType="java.lang.String">
+      update sub_update_log set IS_ACTIVE = 0 where ID =#{id }
+    </delete>
+
+    <select id="queryAllLogPre" resultMap="updateLog">
+        select ID, PROGRAM_VERSION from sub_update_log where IS_ACTIVE = '1' order by ID
+    </select>
+    
+    <select id="queryAllUpdateLogPre" resultMap="updateLog">
+        select ID, PROGRAM_VERSION from sub_update_log where IS_ACTIVE = '1' and id!= '1' order by ID
+    </select>
+    
+    <select id="queryLogsByCondition" parameterType="com.yinhai.hsbsub.entity.UpdateLog" resultMap="updateLog">
+        select ID, PROGRAM_VERSION from sub_update_log WHERE
+        <if test="condition.id != null">
+            id=#{id } AND
+        </if>
+        <if test="condition.programVersion != null and condition.programVersion!=''">
+            <bind name="pattern_programVersion" value="'%' + condition.programVersion + '%'"/>
+            PROGRAM_VERSION LIKE #{pattern_programVersion} AND
+        </if>
+        IS_ACTIVE = '1'
+    </select>
+
+    <select id="queryLogInfoById" resultMap="updateLog">
+        select ID, PROGRAM_VERSION, PROGRAM_FILE_URI, LOG_MD, LOG_HTML, MODIFY_TIME from sub_update_log
+        where IS_ACTIVE = '1' AND ID = #{id }
+    </select>
+
+    <select id="queryLogsByCondition_COUNT" resultType="java.lang.Long">
+        select count(id) from sub_update_log
+        <if test="condition.id != null">
+            id=#{id } AND
+        </if>
+        <if test="condition.programVersion != null and condition.programVersion!=''">
+            <bind name="pattern_programVersion" value="'%' + condition.programVersion + '%'"/>
+            PROGRAM_VERSION LIKE #{pattern_programVersion} AND
+        </if>
+        IS_ACTIVE = '1'
+    </select>
+
+    <update id="updateLogById" parameterType="com.yinhai.hsbsub.entity.UpdateLog">
+        update sub_update_log set
+        <if test="newInfo.programVersion != null and newInfo.programVersion !=''">
+            PROGRAM_VERSION=#{newInfo.programVersion } ,
+        </if>
+        <if test="newInfo.programFileUrl != null and newInfo.programFileUrl !=''">
+            PROGRAM_FILE_URI=#{newInfo.programFileUrl } ,
+        </if>
+        <if test="newInfo.logMd != null and newInfo.logMd !=''">
+            LOG_MD=#{newInfo.logMd } ,
+        </if>
+        <if test="newInfo.logHtml != null and newInfo.logHtml !=''">
+            LOG_HTML=#{newInfo.logHtml } ,
+        </if>
+        <if test="newInfo.modifierId != null and newInfo.modifierId !=''">
+            MODIFIER_ID=#{newInfo.modifierId },
+        </if>
+        MODIFY_TIME=#{newInfo.modifyTime, jdbcType=DATE}
+        where id = #{id } and IS_ACTIVE = '1'
+    </update>
+
+    <select id="checkVersionIsExist" resultType="java.lang.String">
+        select PROGRAM_VERSION from sub_update_log where PROGRAM_VERSION = #{version } and IS_ACTIVE = '1'
+    </select>
+</mapper>

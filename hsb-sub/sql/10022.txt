@@ -1,0 +1,491 @@
+V1.2.0
+
+# 1 11月1号升级
+>版本号：V1.2.0
+发布日期：2022/11/7
+
+## 1.1、升级内容
+### 1.1.1、新增功能
+1、服务巡检(自动检测注册的第三方服务、发布的服务、esb关联的服务的健康状态)
+2、服务总线交互监控
+3、平台业务流程日志
+4、平台业务错误日志
+### 1.1.2、优化
+1、goovy脚本缓存处理，提升soap自定义速度。
+2、修复返回报文中字符串带"的问题。
+3、流程日志增加节点名，节点id，调用者链路id，调用者节点id
+4、服务状态日志中增加版本号(平台启动服务版本号为0），发布功能中发布版本号大于0
+5、服务编排中条件路由增加请求头key-value判断
+## 1.2、执行sql脚本
+在oracel客户端依次执行如下脚本：
+``` sql
+-- endpoint表新增标识名
+ALTER TABLE ESB_ENDPOINT_METADATA ADD ENDPOINTKEY VARCHAR2(300);
+
+UPDATE ESB_ENDPOINT_METADATA SET ENDPOINTKEY  = ENDPOINTNAME  WHERE ENDPOINTKEY IS NULL ;
+
+ALTER TABLE ESB_ENDPOINT_METADATA MODIFY ENDPOINTKEY NOT NULL;
+
+-- 新增ESB_ENDPOINT_LINK ENDPOINTKEY字段
+ALTER TABLE ESB_ENDPOINT_LINK  ADD ENDPOINTKEY VARCHAR2(300);
+
+UPDATE ESB_ENDPOINT_LINK el SET el.ENDPOINTKEY = (SELECT em.ENDPOINTKEY FROM ESB_ENDPOINT_METADATA em WHERE  el.LINKENDPOINTID  = em.ENDPOINTID);
+
+UPDATE ESB_ENDPOINT_LINK el SET el.ENDPOINTKEY = el.LINKENDPOINTID  WHERE ENDPOINTKEY IS NULL ;
+
+-- ALTER TABLE ESB_ENDPOINT_LINK MODIFY ENDPOINTKEY NOT NULL;
+
+-- 创建巡检序列
+CREATE SEQUENCE "MED_ENDPOINT_DETECTION_SEQUENCE" MINVALUE 1 MAXVALUE 999999999999999999999999 INCREMENT BY 1 START WITH 1 CACHE 50 NOORDER  NOCYCLE  NOKEEP  NOSCALE  GLOBAL ;
+
+
+-- 创建endpoint检测表
+CREATE TABLE MED_ENDPOINT_DETECTION (
+                                        ID NUMBER(10,0),
+                                        NAME VARCHAR2(300),
+                                        ENDPOINTTYPE VARCHAR2(100),
+                                        RELATIONENDPOINTID NUMBER(10,0),
+                                        ISOUTER CHAR(1),
+                                        STATUS CHAR(1),
+                                        CHECKTIME DATE NOT NULL,
+                                        CHECKIP VARCHAR2(30),
+                                        EXTENDCONTENT VARCHAR2(1000) DEFAULT '{}' NOT NULL,
+                                        CONSTRAINT MED_ENDPOINT_DETECTION_PK PRIMARY KEY (ID)
+);
+
+
+COMMENT ON COLUMN MED_ENDPOINT_DETECTION.ID IS 'ID';
+COMMENT ON COLUMN MED_ENDPOINT_DETECTION.NAME IS '名称';
+COMMENT ON COLUMN MED_ENDPOINT_DETECTION.ENDPOINTTYPE IS '端点类型';
+COMMENT ON COLUMN MED_ENDPOINT_DETECTION.RELATIONENDPOINTID IS '关联的id';
+COMMENT ON COLUMN MED_ENDPOINT_DETECTION.ISOUTER IS '是否外部';
+COMMENT ON COLUMN MED_ENDPOINT_DETECTION.STATUS IS '状态 1:启动 2:关闭';
+COMMENT ON COLUMN MED_ENDPOINT_DETECTION.CHECKTIME IS '检查时间';
+COMMENT ON COLUMN MED_ENDPOINT_DETECTION.CHECKIP IS '检测的引擎ip';
+COMMENT ON COLUMN MED_ENDPOINT_DETECTION.EXTENDCONTENT IS '扩展字段json';
+
+ALTER TABLE MED_ENDPOINT_DETECTION ADD ERRORSTARTTIME DATE;
+COMMENT ON COLUMN MED_ENDPOINT_DETECTION.ERRORSTARTTIME IS '错误开始时间';
+
+-- 20221029
+alter table MED_SERVICE_LOAD_RECORD add VER NUMBER;
+-- Add comments to the columns
+comment on column MED_SERVICE_LOAD_RECORD.VER
+  is '版本号';
+  
+alter table MED_SERVICE_LOAD_RECORD add enginename varchar2(200);
+-- Add comments to the columns
+comment on column MED_SERVICE_LOAD_RECORD.enginename
+  is '引擎节点名';
+
+
+-- 创建服务自检检测表
+CREATE TABLE MED_SERVICE_DETECTION (
+                                        ID NUMBER(10,0),
+                                        SERVICEKEY VARCHAR2(100),
+                                        SERVICENAME VARCHAR2(300),
+                                        RELATIONSERVICEID NUMBER(10,0),
+                                        STATUS VARCHAR2(20),
+                                        CHECKTIME DATE NOT NULL,
+                                        CHECKIP VARCHAR2(30),
+                                        CHECKNAME VARCHAR2(300),
+                                        EXTENDCONTENT VARCHAR2(1000) DEFAULT '{}' NOT NULL,
+                                        ERRORSTARTTIME DATE,
+                                        CONSTRAINT MED_SERVICE_DETECTION_PK PRIMARY KEY (ID)
+);
+
+
+COMMENT ON COLUMN MED_SERVICE_DETECTION.ID IS 'ID';
+COMMENT ON COLUMN MED_SERVICE_DETECTION.SERVICEKEY IS '服务标识';
+COMMENT ON COLUMN MED_SERVICE_DETECTION.SERVICENAME IS '服务名称';
+COMMENT ON COLUMN MED_SERVICE_DETECTION.RELATIONSERVICEID IS '关联的id';
+COMMENT ON COLUMN MED_SERVICE_DETECTION.STATUS IS '状态';
+COMMENT ON COLUMN MED_SERVICE_DETECTION.CHECKTIME IS '检查时间';
+COMMENT ON COLUMN MED_SERVICE_DETECTION.CHECKIP IS '检测的引擎ip';
+COMMENT ON COLUMN MED_SERVICE_DETECTION.CHECKNAME IS '检测的引擎名称';
+COMMENT ON COLUMN MED_SERVICE_DETECTION.EXTENDCONTENT IS '扩展字段json';
+COMMENT ON COLUMN MED_SERVICE_DETECTION.ERRORSTARTTIME IS '错误开始时间';
+
+ALTER TABLE MED_SERVICE_LOAD_RECORD ADD VER NUMBER(10) COMMENT '版本号';
+comment on column MED_SERVICE_LOAD_RECORD.enginename
+  is '引擎节点名';
+  
+  
+  
+  
+  
+  
+  insert into taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+values ('ac6d960e0084470d87f57b546c687df7', '8fda3770b4684af6a0cd319a3192d6a6', '服务巡检', '', 'sysmg', '', '50', '40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/ac6d960e0084470d87f57b546c687df7', '银海软件/日志监控/服务巡检', '2', '', '', '2', '1', '0', '1', '1', '', to_date('19-10-2022 16:16:49', 'dd-mm-yyyy hh24:mi:ss'), '1', '0', '', '', '', '', '', '', '', '', '', '', '0');
+
+insert into taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+values ('ae2d7e0f4c9a43daa43a79dfef2c762a', 'ac6d960e0084470d87f57b546c687df7', '第三方服务巡检', '', 'sysmg', 'serviceInspection.html#/thirdServiceInspection', '0', '40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/ac6d960e0084470d87f57b546c687df7/ae2d7e0f4c9a43daa43a79dfef2c762a', '银海软件/日志监控/服务巡检/第三方服务巡检', '3', '', '', '2', '1', '0', '1', '1', '', to_date('19-10-2022 16:17:07', 'dd-mm-yyyy hh24:mi:ss'), '1', '0', '', '', '', '', '', '', '', '', '', '', '0');
+
+insert into taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+values ('9cafe42d55b34afebbb79a91b93fcaef', 'ac6d960e0084470d87f57b546c687df7', '内部服务自检', '', 'sysmg', 'serviceInspection.html#/internalServiceInspection', '10', '40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/ac6d960e0084470d87f57b546c687df7/9cafe42d55b34afebbb79a91b93fcaef', '银海软件/日志监控/服务巡检/内部服务自检', '3', '', '', '2', '1', '0', '1', '1', '', to_date('19-10-2022 16:17:22', 'dd-mm-yyyy hh24:mi:ss'), '1', '0', '', '', '', '', '', '', '', '', '', '', '0');
+
+insert into taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+values ('f553117a2ad34008a41a335d78b63cd0', '8fda3770b4684af6a0cd319a3192d6a6', '系统监控', '', 'sysmg', 'systemMonitoring.html#/dsbStatistical', '60', '40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/f553117a2ad34008a41a335d78b63cd0', '银海软件/日志监控/系统监控', '2', '', '', '2', '1', '0', '1', '1', '', to_date('20-10-2022 11:04:55', 'dd-mm-yyyy hh24:mi:ss'), '1', '0', '', '', '', '', '', '', '', '', '', '', '0');
+
+insert into taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+values ('afe625babb3d4cccba12638c82032a8f', '8fda3770b4684af6a0cd319a3192d6a6', '平台业务流程日志', '', 'sysmg', 'ptProcessLog.html#/ptProcessLog', '70', '40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/afe625babb3d4cccba12638c82032a8f', '银海软件/日志监控/平台业务流程日志', '2', '', '', '2', '1', '0', '1', '1', '', to_date('21-10-2022 10:41:14', 'dd-mm-yyyy hh24:mi:ss'), '1', '0', '', '', '', '', '', '', '', '', '', '', '0');
+
+insert into taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+values ('bcbec2db3fa64bb4be3bad8498b02d81', '8fda3770b4684af6a0cd319a3192d6a6', '平台业务错误日志', '', 'sysmg', 'ptProcessErrorLog.html#/ptProcessErrorLog', '80', '40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/bcbec2db3fa64bb4be3bad8498b02d81', '银海软件/日志监控/平台业务错误日志', '2', '', '', '2', '1', '0', '1', '1', '', to_date('21-10-2022 10:45:10', 'dd-mm-yyyy hh24:mi:ss'), '1', '0', '', '', '', '', '', '', '', '', '', '', '0');
+
+insert into taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+values ('89c075a444f043ee9009b99521e23f22', 'ac6d960e0084470d87f57b546c687df7', '平台服务自检', '', 'sysmg', 'serviceInspection.html#/serviceInspection', '20', '40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/ac6d960e0084470d87f57b546c687df7/89c075a444f043ee9009b99521e23f22', '银海软件/日志监控/服务巡检/平台服务自检', '3', '', '', '2', '1', '0', '1', '1', '', to_date('03-11-2022 15:47:11', 'dd-mm-yyyy hh24:mi:ss'), '1', '0', '', '', '', '', '', '', '', '', '', '', '0');
+```
+
+## 1.3、修改配置文件
+### 1.3.1、engine
+**单机模式：**
+忽略此步骤
+
+**集群模式：**
+- 一、自动巡检
+1、在集群节点中选择一个engine，修改其他engine的jar包的配置application.properties
+2、自动巡检包含两个两个配置：enable为自动巡检定时任务开关，默认关闭；checkInterval为定时任务间隔时间，默认10分钟执行依次。
+3、修改配置项
+inspection.enable=true
+inspection.checkInterval=600000
+
+## 1.4、修改启动脚本
+``` powershell
+JAR_NAME=yhbcp-engine-project-3.3.4-RELEASE.jar
+APP_HOME=/application/esb/project/engine
+# 修改为本节点的ip地址
+APP_HOST=192.168.1.1
+# 修改为本节点的引擎名称 单机模式可以不用修改 集群模式下在不同的节点需要配置不同的名称
+APP_NAME=engine
+GC_FILE=./logs/gc.log
+
+
+tpid=`ps -ef|grep $APP_NAME|grep -v grep|grep -v kill|awk '{print $2}'`
+if [ ${tpid} ]; then
+echo 'Stop Process...'
+kill -9 $tpid
+fi
+
+# 再次查看进程是否已结束
+tpid=`ps -ef|grep $APP_NAME|grep -v grep|grep -v kill|awk '{print $2}'`
+if [ ${tpid} ]; then
+echo 'Stop Process...'
+kill -9 $tpid
+else
+echo 'Stop Procecss Successfully!'
+echo 'start Procecss...'
+# 启动程序，简单的启动
+nohup java -Djasypt.encryptor.password=yinhai@123 -Dapplication.host=${APP_HOST} -Dapplication.name=${APP_NAME} -Djasypt.encryptor.algorithm=PBEWithMD5AndDES -Dfile.encoding=UTF-8 -jar -Xms512m -Xmx4g -XX:SurvivorRatio=8 -XX:-UseAdaptiveSizePolicy -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:MaxGCPauseMillis=1000 -XX:+CMSClassUnloadingEnabled -XX:+ScavengeBeforeFullGC -XX:+CMSScavengeBeforeRemark -XX:+PrintGCDetails -XX:+PrintHeapAtGC -XX:+PrintGCDateStamps -XX:+PrintTenuringDistribution -XX:-HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${APP_HOME}/logs/java_pid_%p.hprof -verbose:gc -Xloggc:$GC_FILE $JAR_NAME > engine.out & echo "engine is starting"
+
+# 动态查看日志文件
+tail -300f engine.out
+fi
+```
+
+## 1.5、修改groovy脚本
+``` groovy
+pt_esb_tran
+import java.lang.Integer;
+
+def code = result.code;
+def errmsg = result.sub_msg;
+def sub_msg = result.sub_msg;
+def sub_code = result.sub_code;
+
+
+data.status_code = code;
+data.result_desc = errmsg;
+data.result_code = result.code;
+
+int code1 = Integer.valueOf(code);
+
+if (code1 >=0) {
+  data.orgdata = result.biz_data;
+  data.outflag = "prox";
+}
+else {
+    data.msg =  errmsg;
+}
+
+```
+
+## 1.6、修改ES索引结构
+### 1.6.1、若不需要原索引数据
+- 1、直接将原索引删除然后重启引擎即可，索引创建代码可以在ElasticSearchClient类中查看，索引结构可以在defaultIndices.xml文件中查看。删除索引语句参考下图：
+![desc](http://172.20.21.108:10087/hsbSub/img/ad31ebe0-ac4d-4750-8dd6-417164730379.png)
+### 1.6.2、若需要原索引数据
+- 1、需先创建新索引，比如新建索引invoke_new，索引结构参考defaultIndices.xml文件；
+- 2、将原索引数据迁移至新建的索引当中，命令参考如下（若数据量特别巨大需要进行一定优化，优化方法可以自行百度，否则迁移时间会较长，经试验10亿数据大概需要迁移两天左右）：
+``` json
+post 127.0.0.1:9200/_reindex
+{
+        "source": {
+                "index": "oldIndex"
+        },
+        "dest": {
+                "index": "newIndex"
+        }
+}
+
+3、数据迁移完毕后将原索引删除；
+4、为新索引创建别名，别名为老索引名称即可，命令参考如下：
+post 127.0.0.1:9200/_aliases
+{
+        "actions": [
+                {
+                        "add" : {
+                                "index": "newIndex", 
+                                "alias": "oldIndex"
+                        }
+                }
+        ]
+} 
+
+```
+
+
+
+
+<h1 data-v-md-heading="_1-11月1号升级" data-v-md-line="1">1 11月1号升级</h1>
+<blockquote data-v-md-line="2">
+<p data-v-md-line="2">版本号：V1.2.0<br>
+发布日期：2022/11/7</p>
+</blockquote>
+<h2 data-v-md-heading="_1-1、升级内容" data-v-md-line="5">1.1、升级内容</h2>
+<h3 data-v-md-heading="_1-1-1、新增功能" data-v-md-line="6">1.1.1、新增功能</h3>
+<p data-v-md-line="7">1、服务巡检(自动检测注册的第三方服务、发布的服务、esb关联的服务的健康状态)<br>
+2、服务总线交互监控<br>
+3、平台业务流程日志<br>
+4、平台业务错误日志</p>
+<h3 data-v-md-heading="_1-1-2、优化" data-v-md-line="11">1.1.2、优化</h3>
+<p data-v-md-line="12">1、goovy脚本缓存处理，提升soap自定义速度。<br>
+2、修复返回报文中字符串带&quot;的问题。<br>
+3、流程日志增加节点名，节点id，调用者链路id，调用者节点id<br>
+4、服务状态日志中增加版本号(平台启动服务版本号为0），发布功能中发布版本号大于0<br>
+5、服务编排中条件路由增加请求头key-value判断</p>
+<h2 data-v-md-heading="_1-2、执行sql脚本" data-v-md-line="17">1.2、执行sql脚本</h2>
+<p data-v-md-line="18">在oracel客户端依次执行如下脚本：</p>
+<div data-v-md-line="19"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-comment">-- endpoint表新增标识名</span>
+<span class="hljs-keyword">ALTER</span> <span class="hljs-keyword">TABLE</span> ESB_ENDPOINT_METADATA <span class="hljs-keyword">ADD</span> ENDPOINTKEY VARCHAR2(<span class="hljs-number">300</span>);
+
+UPDATE ESB_ENDPOINT_METADATA <span class="hljs-keyword">SET</span> ENDPOINTKEY  <span class="hljs-operator">=</span> ENDPOINTNAME  <span class="hljs-keyword">WHERE</span> ENDPOINTKEY <span class="hljs-keyword">IS</span> <span class="hljs-keyword">NULL</span> ;
+
+<span class="hljs-keyword">ALTER</span> <span class="hljs-keyword">TABLE</span> ESB_ENDPOINT_METADATA MODIFY ENDPOINTKEY <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>;
+
+<span class="hljs-comment">-- 新增ESB_ENDPOINT_LINK ENDPOINTKEY字段</span>
+<span class="hljs-keyword">ALTER</span> <span class="hljs-keyword">TABLE</span> ESB_ENDPOINT_LINK  <span class="hljs-keyword">ADD</span> ENDPOINTKEY VARCHAR2(<span class="hljs-number">300</span>);
+
+UPDATE ESB_ENDPOINT_LINK el <span class="hljs-keyword">SET</span> el.ENDPOINTKEY <span class="hljs-operator">=</span> (<span class="hljs-keyword">SELECT</span> em.ENDPOINTKEY <span class="hljs-keyword">FROM</span> ESB_ENDPOINT_METADATA em <span class="hljs-keyword">WHERE</span>  el.LINKENDPOINTID  <span class="hljs-operator">=</span> em.ENDPOINTID);
+
+UPDATE ESB_ENDPOINT_LINK el <span class="hljs-keyword">SET</span> el.ENDPOINTKEY <span class="hljs-operator">=</span> el.LINKENDPOINTID  <span class="hljs-keyword">WHERE</span> ENDPOINTKEY <span class="hljs-keyword">IS</span> <span class="hljs-keyword">NULL</span> ;
+
+<span class="hljs-comment">-- ALTER TABLE ESB_ENDPOINT_LINK MODIFY ENDPOINTKEY NOT NULL;</span>
+
+<span class="hljs-comment">-- 创建巡检序列</span>
+<span class="hljs-keyword">CREATE</span> SEQUENCE &quot;MED_ENDPOINT_DETECTION_SEQUENCE&quot; MINVALUE <span class="hljs-number">1</span> MAXVALUE <span class="hljs-number">999999999999999999999999</span> INCREMENT <span class="hljs-keyword">BY</span> <span class="hljs-number">1</span> <span class="hljs-keyword">START</span> <span class="hljs-keyword">WITH</span> <span class="hljs-number">1</span> CACHE <span class="hljs-number">50</span> NOORDER  NOCYCLE  NOKEEP  NOSCALE  <span class="hljs-keyword">GLOBAL</span> ;
+
+
+<span class="hljs-comment">-- 创建endpoint检测表</span>
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> MED_ENDPOINT_DETECTION (
+                                        ID NUMBER(<span class="hljs-number">10</span>,<span class="hljs-number">0</span>),
+                                        NAME VARCHAR2(<span class="hljs-number">300</span>),
+                                        ENDPOINTTYPE VARCHAR2(<span class="hljs-number">100</span>),
+                                        RELATIONENDPOINTID NUMBER(<span class="hljs-number">10</span>,<span class="hljs-number">0</span>),
+                                        ISOUTER <span class="hljs-type">CHAR</span>(<span class="hljs-number">1</span>),
+                                        STATUS <span class="hljs-type">CHAR</span>(<span class="hljs-number">1</span>),
+                                        CHECKTIME <span class="hljs-type">DATE</span> <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+                                        CHECKIP VARCHAR2(<span class="hljs-number">30</span>),
+                                        EXTENDCONTENT VARCHAR2(<span class="hljs-number">1000</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">&#x27;{}&#x27;</span> <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+                                        <span class="hljs-keyword">CONSTRAINT</span> MED_ENDPOINT_DETECTION_PK <span class="hljs-keyword">PRIMARY</span> KEY (ID)
+);
+
+
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ENDPOINT_DETECTION.ID <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;ID&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ENDPOINT_DETECTION.NAME <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;名称&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ENDPOINT_DETECTION.ENDPOINTTYPE <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;端点类型&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ENDPOINT_DETECTION.RELATIONENDPOINTID <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;关联的id&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ENDPOINT_DETECTION.ISOUTER <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;是否外部&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ENDPOINT_DETECTION.STATUS <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;状态 1:启动 2:关闭&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ENDPOINT_DETECTION.CHECKTIME <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;检查时间&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ENDPOINT_DETECTION.CHECKIP <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;检测的引擎ip&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ENDPOINT_DETECTION.EXTENDCONTENT <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;扩展字段json&#x27;</span>;
+
+<span class="hljs-keyword">ALTER</span> <span class="hljs-keyword">TABLE</span> MED_ENDPOINT_DETECTION <span class="hljs-keyword">ADD</span> ERRORSTARTTIME <span class="hljs-type">DATE</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ENDPOINT_DETECTION.ERRORSTARTTIME <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;错误开始时间&#x27;</span>;
+
+<span class="hljs-comment">-- 20221029</span>
+<span class="hljs-keyword">alter</span> <span class="hljs-keyword">table</span> MED_SERVICE_LOAD_RECORD <span class="hljs-keyword">add</span> VER NUMBER;
+<span class="hljs-comment">-- Add comments to the columns</span>
+comment <span class="hljs-keyword">on</span> <span class="hljs-keyword">column</span> MED_SERVICE_LOAD_RECORD.VER
+  <span class="hljs-keyword">is</span> <span class="hljs-string">&#x27;版本号&#x27;</span>;
+  
+<span class="hljs-keyword">alter</span> <span class="hljs-keyword">table</span> MED_SERVICE_LOAD_RECORD <span class="hljs-keyword">add</span> enginename varchar2(<span class="hljs-number">200</span>);
+<span class="hljs-comment">-- Add comments to the columns</span>
+comment <span class="hljs-keyword">on</span> <span class="hljs-keyword">column</span> MED_SERVICE_LOAD_RECORD.enginename
+  <span class="hljs-keyword">is</span> <span class="hljs-string">&#x27;引擎节点名&#x27;</span>;
+
+
+<span class="hljs-comment">-- 创建服务自检检测表</span>
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> MED_SERVICE_DETECTION (
+                                        ID NUMBER(<span class="hljs-number">10</span>,<span class="hljs-number">0</span>),
+                                        SERVICEKEY VARCHAR2(<span class="hljs-number">100</span>),
+                                        SERVICENAME VARCHAR2(<span class="hljs-number">300</span>),
+                                        RELATIONSERVICEID NUMBER(<span class="hljs-number">10</span>,<span class="hljs-number">0</span>),
+                                        STATUS VARCHAR2(<span class="hljs-number">20</span>),
+                                        CHECKTIME <span class="hljs-type">DATE</span> <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+                                        CHECKIP VARCHAR2(<span class="hljs-number">30</span>),
+                                        CHECKNAME VARCHAR2(<span class="hljs-number">300</span>),
+                                        EXTENDCONTENT VARCHAR2(<span class="hljs-number">1000</span>) <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">&#x27;{}&#x27;</span> <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>,
+                                        ERRORSTARTTIME <span class="hljs-type">DATE</span>,
+                                        <span class="hljs-keyword">CONSTRAINT</span> MED_SERVICE_DETECTION_PK <span class="hljs-keyword">PRIMARY</span> KEY (ID)
+);
+
+
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_SERVICE_DETECTION.ID <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;ID&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_SERVICE_DETECTION.SERVICEKEY <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;服务标识&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_SERVICE_DETECTION.SERVICENAME <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;服务名称&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_SERVICE_DETECTION.RELATIONSERVICEID <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;关联的id&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_SERVICE_DETECTION.STATUS <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;状态&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_SERVICE_DETECTION.CHECKTIME <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;检查时间&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_SERVICE_DETECTION.CHECKIP <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;检测的引擎ip&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_SERVICE_DETECTION.CHECKNAME <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;检测的引擎名称&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_SERVICE_DETECTION.EXTENDCONTENT <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;扩展字段json&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_SERVICE_DETECTION.ERRORSTARTTIME <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;错误开始时间&#x27;</span>;
+
+<span class="hljs-keyword">ALTER</span> <span class="hljs-keyword">TABLE</span> MED_SERVICE_LOAD_RECORD <span class="hljs-keyword">ADD</span> VER NUMBER(<span class="hljs-number">10</span>) COMMENT <span class="hljs-string">&#x27;版本号&#x27;</span>;
+comment <span class="hljs-keyword">on</span> <span class="hljs-keyword">column</span> MED_SERVICE_LOAD_RECORD.enginename
+  <span class="hljs-keyword">is</span> <span class="hljs-string">&#x27;引擎节点名&#x27;</span>;
+  
+  
+  
+  
+  
+  
+  <span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+<span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;ac6d960e0084470d87f57b546c687df7&#x27;</span>, <span class="hljs-string">&#x27;8fda3770b4684af6a0cd319a3192d6a6&#x27;</span>, <span class="hljs-string">&#x27;服务巡检&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;sysmg&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;50&#x27;</span>, <span class="hljs-string">&#x27;40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/ac6d960e0084470d87f57b546c687df7&#x27;</span>, <span class="hljs-string">&#x27;银海软件/日志监控/服务巡检&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, to_date(<span class="hljs-string">&#x27;19-10-2022 16:16:49&#x27;</span>, <span class="hljs-string">&#x27;dd-mm-yyyy hh24:mi:ss&#x27;</span>), <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>);
+
+<span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+<span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;ae2d7e0f4c9a43daa43a79dfef2c762a&#x27;</span>, <span class="hljs-string">&#x27;ac6d960e0084470d87f57b546c687df7&#x27;</span>, <span class="hljs-string">&#x27;第三方服务巡检&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;sysmg&#x27;</span>, <span class="hljs-string">&#x27;serviceInspection.html#/thirdServiceInspection&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/ac6d960e0084470d87f57b546c687df7/ae2d7e0f4c9a43daa43a79dfef2c762a&#x27;</span>, <span class="hljs-string">&#x27;银海软件/日志监控/服务巡检/第三方服务巡检&#x27;</span>, <span class="hljs-string">&#x27;3&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, to_date(<span class="hljs-string">&#x27;19-10-2022 16:17:07&#x27;</span>, <span class="hljs-string">&#x27;dd-mm-yyyy hh24:mi:ss&#x27;</span>), <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>);
+
+<span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+<span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;9cafe42d55b34afebbb79a91b93fcaef&#x27;</span>, <span class="hljs-string">&#x27;ac6d960e0084470d87f57b546c687df7&#x27;</span>, <span class="hljs-string">&#x27;内部服务自检&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;sysmg&#x27;</span>, <span class="hljs-string">&#x27;serviceInspection.html#/internalServiceInspection&#x27;</span>, <span class="hljs-string">&#x27;10&#x27;</span>, <span class="hljs-string">&#x27;40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/ac6d960e0084470d87f57b546c687df7/9cafe42d55b34afebbb79a91b93fcaef&#x27;</span>, <span class="hljs-string">&#x27;银海软件/日志监控/服务巡检/内部服务自检&#x27;</span>, <span class="hljs-string">&#x27;3&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, to_date(<span class="hljs-string">&#x27;19-10-2022 16:17:22&#x27;</span>, <span class="hljs-string">&#x27;dd-mm-yyyy hh24:mi:ss&#x27;</span>), <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>);
+
+<span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+<span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;f553117a2ad34008a41a335d78b63cd0&#x27;</span>, <span class="hljs-string">&#x27;8fda3770b4684af6a0cd319a3192d6a6&#x27;</span>, <span class="hljs-string">&#x27;系统监控&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;sysmg&#x27;</span>, <span class="hljs-string">&#x27;systemMonitoring.html#/dsbStatistical&#x27;</span>, <span class="hljs-string">&#x27;60&#x27;</span>, <span class="hljs-string">&#x27;40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/f553117a2ad34008a41a335d78b63cd0&#x27;</span>, <span class="hljs-string">&#x27;银海软件/日志监控/系统监控&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, to_date(<span class="hljs-string">&#x27;20-10-2022 11:04:55&#x27;</span>, <span class="hljs-string">&#x27;dd-mm-yyyy hh24:mi:ss&#x27;</span>), <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>);
+
+<span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+<span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;afe625babb3d4cccba12638c82032a8f&#x27;</span>, <span class="hljs-string">&#x27;8fda3770b4684af6a0cd319a3192d6a6&#x27;</span>, <span class="hljs-string">&#x27;平台业务流程日志&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;sysmg&#x27;</span>, <span class="hljs-string">&#x27;ptProcessLog.html#/ptProcessLog&#x27;</span>, <span class="hljs-string">&#x27;70&#x27;</span>, <span class="hljs-string">&#x27;40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/afe625babb3d4cccba12638c82032a8f&#x27;</span>, <span class="hljs-string">&#x27;银海软件/日志监控/平台业务流程日志&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, to_date(<span class="hljs-string">&#x27;21-10-2022 10:41:14&#x27;</span>, <span class="hljs-string">&#x27;dd-mm-yyyy hh24:mi:ss&#x27;</span>), <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>);
+
+<span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+<span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;bcbec2db3fa64bb4be3bad8498b02d81&#x27;</span>, <span class="hljs-string">&#x27;8fda3770b4684af6a0cd319a3192d6a6&#x27;</span>, <span class="hljs-string">&#x27;平台业务错误日志&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;sysmg&#x27;</span>, <span class="hljs-string">&#x27;ptProcessErrorLog.html#/ptProcessErrorLog&#x27;</span>, <span class="hljs-string">&#x27;80&#x27;</span>, <span class="hljs-string">&#x27;40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/bcbec2db3fa64bb4be3bad8498b02d81&#x27;</span>, <span class="hljs-string">&#x27;银海软件/日志监控/平台业务错误日志&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, to_date(<span class="hljs-string">&#x27;21-10-2022 10:45:10&#x27;</span>, <span class="hljs-string">&#x27;dd-mm-yyyy hh24:mi:ss&#x27;</span>), <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>);
+
+<span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH)
+<span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;89c075a444f043ee9009b99521e23f22&#x27;</span>, <span class="hljs-string">&#x27;ac6d960e0084470d87f57b546c687df7&#x27;</span>, <span class="hljs-string">&#x27;平台服务自检&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;sysmg&#x27;</span>, <span class="hljs-string">&#x27;serviceInspection.html#/serviceInspection&#x27;</span>, <span class="hljs-string">&#x27;20&#x27;</span>, <span class="hljs-string">&#x27;40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/ac6d960e0084470d87f57b546c687df7/89c075a444f043ee9009b99521e23f22&#x27;</span>, <span class="hljs-string">&#x27;银海软件/日志监控/服务巡检/平台服务自检&#x27;</span>, <span class="hljs-string">&#x27;3&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, to_date(<span class="hljs-string">&#x27;03-11-2022 15:47:11&#x27;</span>, <span class="hljs-string">&#x27;dd-mm-yyyy hh24:mi:ss&#x27;</span>), <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>);
+</code></pre>
+</div></div><h2 data-v-md-heading="_1-3、修改配置文件" data-v-md-line="138">1.3、修改配置文件</h2>
+<h3 data-v-md-heading="_1-3-1、engine" data-v-md-line="139">1.3.1、engine</h3>
+<p data-v-md-line="140"><strong>单机模式：</strong><br>
+忽略此步骤</p>
+<p data-v-md-line="143"><strong>集群模式：</strong></p>
+<ul data-v-md-line="144">
+<li>一、自动巡检<br>
+1、在集群节点中选择一个engine，修改其他engine的jar包的配置application.properties<br>
+2、自动巡检包含两个两个配置：enable为自动巡检定时任务开关，默认关闭；checkInterval为定时任务间隔时间，默认10分钟执行依次。<br>
+3、修改配置项<br>
+inspection.enable=true<br>
+inspection.checkInterval=600000</li>
+</ul>
+<h2 data-v-md-heading="_1-4、修改启动脚本" data-v-md-line="151">1.4、修改启动脚本</h2>
+<div data-v-md-line="152"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>JAR_NAME=yhbcp<span class="hljs-literal">-engine</span><span class="hljs-literal">-project</span><span class="hljs-literal">-3</span>.<span class="hljs-number">3.4</span><span class="hljs-literal">-RELEASE</span>.jar
+APP_HOME=/application/esb/project/engine
+<span class="hljs-comment"># 修改为本节点的ip地址</span>
+APP_HOST=<span class="hljs-number">192.168</span>.<span class="hljs-number">1.1</span>
+<span class="hljs-comment"># 修改为本节点的引擎名称 单机模式可以不用修改 集群模式下在不同的节点需要配置不同的名称</span>
+APP_NAME=engine
+GC_FILE=./logs/gc.log
+
+
+tpid=`ps <span class="hljs-literal">-ef</span>|grep <span class="hljs-variable">$APP_NAME</span>|grep <span class="hljs-literal">-v</span> grep|grep <span class="hljs-literal">-v</span> <span class="hljs-built_in">kill</span>|awk <span class="hljs-string">&#x27;{print $2}&#x27;</span>`
+<span class="hljs-keyword">if</span> [ <span class="hljs-variable">$</span>{<span class="hljs-type">tpid</span>} ]; then
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;Stop Process...&#x27;</span>
+<span class="hljs-built_in">kill</span> <span class="hljs-literal">-9</span> <span class="hljs-variable">$tpid</span>
+fi
+
+<span class="hljs-comment"># 再次查看进程是否已结束</span>
+tpid=`ps <span class="hljs-literal">-ef</span>|grep <span class="hljs-variable">$APP_NAME</span>|grep <span class="hljs-literal">-v</span> grep|grep <span class="hljs-literal">-v</span> <span class="hljs-built_in">kill</span>|awk <span class="hljs-string">&#x27;{print $2}&#x27;</span>`
+<span class="hljs-keyword">if</span> [ <span class="hljs-variable">$</span>{<span class="hljs-type">tpid</span>} ]; then
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;Stop Process...&#x27;</span>
+<span class="hljs-built_in">kill</span> <span class="hljs-literal">-9</span> <span class="hljs-variable">$tpid</span>
+<span class="hljs-keyword">else</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;Stop Procecss Successfully!&#x27;</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;start Procecss...&#x27;</span>
+<span class="hljs-comment"># 启动程序，简单的启动</span>
+nohup java <span class="hljs-literal">-Djasypt</span>.encryptor.password=yinhai@<span class="hljs-number">123</span> <span class="hljs-literal">-Dapplication</span>.host=<span class="hljs-variable">$</span>{APP_HOST} <span class="hljs-literal">-Dapplication</span>.name=<span class="hljs-variable">$</span>{APP_NAME} <span class="hljs-literal">-Djasypt</span>.encryptor.algorithm=PBEWithMD5AndDES <span class="hljs-literal">-Dfile</span>.encoding=UTF<span class="hljs-literal">-8</span> <span class="hljs-literal">-jar</span> <span class="hljs-literal">-Xms512m</span> <span class="hljs-literal">-Xmx4g</span> <span class="hljs-literal">-XX</span>:SurvivorRatio=<span class="hljs-number">8</span> <span class="hljs-literal">-XX</span>:<span class="hljs-literal">-UseAdaptiveSizePolicy</span> <span class="hljs-literal">-XX</span>:+UseParNewGC <span class="hljs-literal">-XX</span>:+UseConcMarkSweepGC <span class="hljs-literal">-XX</span>:MaxGCPauseMillis=<span class="hljs-number">1000</span> <span class="hljs-literal">-XX</span>:+CMSClassUnloadingEnabled <span class="hljs-literal">-XX</span>:+ScavengeBeforeFullGC <span class="hljs-literal">-XX</span>:+CMSScavengeBeforeRemark <span class="hljs-literal">-XX</span>:+PrintGCDetails <span class="hljs-literal">-XX</span>:+PrintHeapAtGC <span class="hljs-literal">-XX</span>:+PrintGCDateStamps <span class="hljs-literal">-XX</span>:+PrintTenuringDistribution <span class="hljs-literal">-XX</span>:<span class="hljs-literal">-HeapDumpOnOutOfMemoryError</span> <span class="hljs-literal">-XX</span>:HeapDumpPath=<span class="hljs-variable">$</span>{APP_HOME}/logs/java_pid_%p.hprof <span class="hljs-literal">-verbose</span>:<span class="hljs-built_in">gc</span> <span class="hljs-literal">-Xloggc</span>:<span class="hljs-variable">$GC_FILE</span> <span class="hljs-variable">$JAR_NAME</span> &gt; engine.out &amp; <span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;engine is starting&quot;</span>
+
+<span class="hljs-comment"># 动态查看日志文件</span>
+tail <span class="hljs-literal">-300f</span> engine.out
+fi
+</code></pre>
+</div></div><h2 data-v-md-heading="_1-5、修改groovy脚本" data-v-md-line="184">1.5、修改groovy脚本</h2>
+<div data-v-md-line="185"><div class="v-md-pre-wrapper v-md-pre-wrapper-groovy extra-class"><pre class="v-md-hljs-groovy"><code>pt_esb_tran
+<span class="hljs-keyword">import</span> java.lang.Integer;
+
+<span class="hljs-keyword">def</span> code = result.code;
+<span class="hljs-keyword">def</span> errmsg = result.sub_msg;
+<span class="hljs-keyword">def</span> sub_msg = result.sub_msg;
+<span class="hljs-keyword">def</span> sub_code = result.sub_code;
+
+
+data.status_code = code;
+data.result_desc = errmsg;
+data.result_code = result.code;
+
+<span class="hljs-keyword">int</span> code1 = Integer.valueOf(code);
+
+<span class="hljs-keyword">if</span> (code1 &gt;=<span class="hljs-number">0</span>) {
+  data.orgdata = result.biz_data;
+  data.outflag = <span class="hljs-string">&quot;prox&quot;</span>;
+}
+<span class="hljs-keyword">else</span> {
+    data.msg =  errmsg;
+}
+
+</code></pre>
+</div></div><h2 data-v-md-heading="_1-6、修改es索引结构" data-v-md-line="211">1.6、修改ES索引结构</h2>
+<h3 data-v-md-heading="_1-6-1、若不需要原索引数据" data-v-md-line="212">1.6.1、若不需要原索引数据</h3>
+<ul data-v-md-line="213">
+<li>1、直接将原索引删除然后重启引擎即可，索引创建代码可以在ElasticSearchClient类中查看，索引结构可以在defaultIndices.xml文件中查看。删除索引语句参考下图：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/ad31ebe0-ac4d-4750-8dd6-417164730379.png" alt="desc"></li>
+</ul>
+<h3 data-v-md-heading="_1-6-2、若需要原索引数据" data-v-md-line="215">1.6.2、若需要原索引数据</h3>
+<ul data-v-md-line="216">
+<li>1、需先创建新索引，比如新建索引invoke_new，索引结构参考defaultIndices.xml文件；</li>
+<li>2、将原索引数据迁移至新建的索引当中，命令参考如下（若数据量特别巨大需要进行一定优化，优化方法可以自行百度，否则迁移时间会较长，经试验10亿数据大概需要迁移两天左右）：</li>
+</ul>
+<div data-v-md-line="218"><div class="v-md-pre-wrapper v-md-pre-wrapper-json extra-class"><pre class="v-md-hljs-json"><code>post 127.0.0.1:9200/_reindex
+{
+        &quot;source&quot;: {
+                &quot;index&quot;: &quot;oldIndex&quot;
+        },
+        &quot;dest&quot;: {
+                &quot;index&quot;: &quot;newIndex&quot;
+        }
+}
+
+3、数据迁移完毕后将原索引删除；
+4、为新索引创建别名，别名为老索引名称即可，命令参考如下：
+post 127.0.0.1:9200/_aliases
+{
+        &quot;actions&quot;: [
+                {
+                        &quot;add&quot; : {
+                                &quot;index&quot;: &quot;newIndex&quot;, 
+                                &quot;alias&quot;: &quot;oldIndex&quot;
+                        }
+                }
+        ]
+} 
+
+</code></pre>
+</div></div>

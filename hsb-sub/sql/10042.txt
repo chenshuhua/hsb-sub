@@ -1,0 +1,901 @@
+v1.2.2
+
+http://172.20.21.108:10087/hsbSub/program/v1.2.2/yh-hsb-v1.2.2.zip
+
+**<center><font size='5' color='#0078d7'>版本v1.2.2</font></center>**
+<center>发布日期：2023年1月6日</center>
+
+---
+
+# 1、升级内容
+## 1.1、新增功能
+- 后端报错异常信息翻译
+- 根据wsdl验证第三方厂商接口
+- 错误异常码归类
+
+## 1.2、优化内容
+- 优化消息队列消费者异常处理
+- 优化启动脚本
+- 资源管理中编辑交换机关联的队列后，导致队列查询不到
+- 服务列表中，编辑服务后导致服务列表查询不到
+- engine集群模式下，节点间通讯问题
+- 流程导入导出
+- 部署配置简化
+
+# 2、升级步骤
+
+## 2.1、在es中新增异常模板映射
+PUT http://{es IP地址}:{es端口}/error_template
+``` json
+{
+ 
+    "mappings":{
+
+      "properties":{
+        "exceptionClass":{
+          "type":"keyword"
+        },
+        "exceptionKeywords":{
+          "type":"text",
+          "analyzer":"standard"
+        },
+        "matchMethod":{
+          "type":"keyword"
+        },
+        "translateMethod":{
+          "type":"keyword"
+        },
+        "translateExpressions":{
+          "properties":{
+            "expression":{
+              "type":"text"
+            },
+            "templateMessage":{
+              "type":"text"
+            }
+          }
+        }
+      }
+      
+    }
+ 
+}
+```
+
+## 2.2、es中新增异常模板数据
+``` json
+POST http://{es IP地址}:{es端口}/error_template/_doc
+ {
+    "exceptionClass":"com.alibaba.fastjson.JSONException",
+    "exceptionKeywords":" syntax error, expect {, actual [",
+    "matchMethod":"PrefixMatch",
+    "translateMethod":"Regexp",
+    "translateExpressions":[
+        {
+            "expression":"syntax error, expect (.*?), actual (.*?), pos (.*?), line (.*?), column (\\d+)(.*)",
+            "templateMessage":"语法错误，期望接收：%s，实际接收为：%s ，位置: %s ,行: %s , 列: %s , 详细为：%s"
+        }
+    ]
+}
+
+```
+``` json
+POST http://{es IP地址}:{es端口}/error_template/_doc
+{
+    "exceptionClass":"feign.RetryableException",
+    "exceptionKeywords":" Failed to connect to executing POST",
+    "matchMethod":"PrefixMatch",
+    "translateMethod":"Regexp",
+    "translateExpressions":[
+        {
+            "expression":" Failed to connect to /(.*?) executing POST (.*)",
+            "templateMessage":"不能连接到目标地址：%s，实际执行请求：%s"
+        }
+    ]
+}
+
+```
+
+## 2.3、执行sql
+``` sql
+-- 为表esb_medical.pt_esb_error_log新增一个字段
+alter table pt_esb_error_log add p_error_code varchar2(15);
+comment on column pt_esb_error_log.p_error_code is '错误编码';
+
+--新增功能菜单厂商服务验证数据
+insert into taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH, IMAGE)
+values ('db6e2be2a62e4cd28c58891f81a20c92', '8fda3770b4684af6a0cd319a3192d6a6', '厂商服务验证', null, 'sysmg', 'ptCheckServer.html#ptCheckServer', 90, '40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/db6e2be2a62e4cd28c58891f81a20c92', '银海软件/日志监控/厂商服务验证', '2', null, null, '2', 1, '0', '1', '1', null, to_date('23-12-2022 09:53:08', 'dd-mm-yyyy hh24:mi:ss'), '1', '0', null, null, null, null, null, null, null, null, null, null, '0', null);
+ 
+```
+
+## 2.4、本次升级脚本、配置更改
+本次升级启动脚本start.sh和config目录下app.properties文件做了升级改动
+
+## 2.5、需要修改的groovy脚本
+- pt_esb_resp
+<font color='red'>该资源不在groovy里而是在“SOAP请求报文脚本”中！！！别改错了</font>
+<font color='red'>该资源不在groovy里而是在“SOAP请求报文脚本”中！！！别改错了</font>
+<font color='red'>该资源不在groovy里而是在“SOAP请求报文脚本”中！！！别改错了</font>
+``` xml
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+   <soap:Body>
+      <ns2:callBussinessResponse xmlns:ns2="http://esb.webservice">
+         <data>
+            <status_code>${data.result_code}</status_code>
+            <msg>
+	            ${data.msg}
+          </msg>
+         </data>
+      </ns2:callBussinessResponse>
+   </soap:Body>
+</soap:Envelope>
+```
+---
+
+- pt_esb_tran
+
+``` groovy
+import java.lang.Integer;
+
+def code = result.code;
+def errmsg = result.sub_msg;
+def sub_msg = result.sub_msg;
+def sub_code = result.sub_code;
+
+
+data.status_code = code;
+data.result_desc = errmsg;
+data.result_code = sub_code
+
+int code1 = Integer.valueOf(code);
+
+if (code1 >=0) {
+  data.orgdata = result.biz_data;
+  data.outflag = "prox";
+}
+else {
+    data.msg =  errmsg;
+}
+```
+---
+
+- soapCheck
+``` groovy
+import com.yinhai.yhbcp.engine.med.util.XmlMapUtil
+import com.yinhai.yhbcp.engine.med.util.GlobalVariableUtil
+import com.yinhai.bcp.common.api.ErrorConstants
+import com.yinhai.engine.common.exception.GroovyShellException
+import java.net.URLEncoder
+import java.time.LocalDateTime
+
+//headers.request_body = URLEncoder.encode(body, "UTF-8")
+
+def date = new Date()
+headers.p_original_date=date
+
+headers.respones_error = '0'
+headers.p_success = '0'
+def reqxml = XmlMapUtil.xml2map(body, false)
+
+def Base64Sign = reqxml.head.sign
+def sign = new String(Base64Sign.decodeBase64(), 'utf-8')
+def version = reqxml.head.version
+def code = reqxml.head.code
+def timestamp = reqxml.head.timestamp
+def request_id = reqxml.head.request_id
+def source_system = reqxml.head.source_system
+def object_system = reqxml.head.object_system
+def action = reqxml.head.action
+
+def check = "version=$version&timestamp=$timestamp&request_id=$request_id&source_system=$source_system&object_system=$object_system&action=$action"
+if (sign != check) {
+    throw new GroovyShellException(2001, "sign验证失败")
+}
+
+headers.action = action
+headers.sign = sign
+headers.p_source = source_system
+headers.p_target = object_system
+headers.code = code
+
+body = body
+```
+---
+
+- actionError
+``` groovy
+import com.yinhai.engine.common.exception.GroovyShellException
+
+throw new GroovyShellException(2002, "没有找到对应的action")
+body = body;
+```
+---
+
+- xieku
+``` groovy
+import java.net.URLDecoder
+import java.time.LocalDateTime
+
+if(headers.action!=null){
+    headers.action = URLDecoder.decode(headers.action, "UTF-8");
+}
+if(headers.sign!=null){
+    headers.sign = URLDecoder.decode(headers.sign, "UTF-8");
+}
+if(headers.p_source!=null){
+    headers.p_source = URLDecoder.decode(headers.p_source, "UTF-8");
+}
+if(headers.p_target!=null){
+    headers.p_target = URLDecoder.decode(headers.p_target, "UTF-8");
+}
+if(headers.code!=null){
+    headers.code = URLDecoder.decode(headers.code, "UTF-8");
+}
+if(headers.logSerialNumber!=null){
+    headers.p_uuid = URLDecoder.decode(headers.logSerialNumber, "UTF-8");
+}
+if(headers.logContent!=null){
+    headers.p_data_content = URLDecoder.decode(headers.logContent, "UTF-8");
+}
+if(headers.logException!=null){
+    headers.p_error_info = URLDecoder.decode(headers.logException, "UTF-8");
+}
+if(headers.logExceptionCode!=null){
+    headers.p_error_code = URLDecoder.decode(headers.logExceptionCode, "UTF-8");
+}
+if(headers.p_id!=null){
+    headers.p_id = URLDecoder.decode(headers.p_id, "UTF-8");
+}
+if(headers.p_jz_type!=null){
+    headers.p_jz_type = URLDecoder.decode(headers.p_jz_type, "UTF-8");
+}
+if(headers.p_op_type!=null){
+    headers.p_op_type = URLDecoder.decode(headers.p_op_type, "UTF-8");
+}
+if(headers.p_original_date!=null){
+    headers.p_original_date = headers.p_original_date
+}
+if(headers.p_op_name!=null){
+    headers.p_op_name = URLDecoder.decode(headers.p_op_name, "UTF-8");
+}
+headers.p_op_date = LocalDateTime.now()
+if(headers.p_success!=null){
+    headers.p_success = URLDecoder.decode(headers.p_success, "UTF-8");
+}
+
+body=body
+```
+---
+
+- responseStatus
+``` groovy
+import com.yinhai.yhbcp.engine.med.util.XmlMapUtil;
+
+headers.respones=body;
+
+def reqxml=null
+def status_code=null
+try{
+    reqxml = XmlMapUtil.xml2map(body, false);
+    status_code=reqxml.Body.callBussinessResponse.data.status_code;
+}
+catch(e){
+    headers.p_success="0";
+    headers.respones_error='1'
+    headers.logException="三方系统响应内容格式错误"+e+"\n消息为："+body;
+    headers.logExceptionCode="20--2008"
+}
+if(status_code!=null){
+  if(status_code=='1'){
+    headers.p_success=status_code;
+  }else{
+    headers.respones_error='1'
+    headers.p_success="0";
+    if(headers.logException==null){
+    headers.logException="三方系统响应状态码错误\n消息为："+headers.respones;
+    headers.logExceptionCode="20--2008"
+    }
+  }
+}else{
+    headers.p_success="0";
+    headers.respones_error='1'
+    headers.logException="三方系统响应内容格式错误\n消息为："+body;
+    headers.logExceptionCode="20--2008"
+}
+
+body = body;
+```
+---
+
+- maindata_response_analysis
+``` groovy
+import com.yinhai.yhbcp.engine.med.util.XpathUtil;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import java.net.URLEncoder;
+import com.yinhai.engine.common.exception.GroovyShellException;
+
+def namespace ="soap=http://schemas.xmlsoap.org/soap/envelope/,ns2=http://esb.webservice"
+def codeEx ="/soap:Envelope/soap:Body/ns2:callBussinessResponse/data/status_code"
+def msgEx ="/soap:Envelope/soap:Body/ns2:callBussinessResponse/data/msg"
+
+def status_code=null
+def msg=null
+try{
+  status_code=XpathUtil.getNodeValue(namespace, codeEx, body)
+  msg = XpathUtil.getNodeValue(namespace, msgEx, body)
+}
+catch(e){
+  headers.p_success="0";
+  headers.respones_error='1'
+  //throw new GroovyShellException(2009, "主数据接收方响应内容格式错误: "+e+"\n接收方响应的消息为："+body);
+  headers.logException="主数据接收方响应内容格式错误: "+e+"\n接收方响应的消息为："+body;
+  headers.logExceptionCode="20--2009"
+}
+if(status_code!=null){
+  if(status_code=='1'){
+    headers.p_success='2';
+  }else{
+    headers.respones_error='1'
+    headers.p_success="0";
+    headers.logException="主数据接收方响应状态码为：‘" + status_code + "’非约的定成功响应码\n接收方响应的消息为："+body;
+    headers.logExceptionCode="20--2009"
+    //throw new GroovyShellException(2009, "主数据接收方响应状态码为：‘" + status_code + "’非约的定成功响应码\n接收方响应的消息为："+body);
+  }
+}else{
+  headers.p_success="0";
+  headers.respones_error='1';
+  //throw new GroovyShellException(2009, "主数据接收方响应内容格式错误,接收方响应的消息为："+body);
+  headers.logException="主数据接收方响应内容格式错误,接收方响应的消息为："+body;
+  headers.logExceptionCode="20--2009"
+}
+
+def version=headers.version
+def timestamp=headers.zsj_timestamp
+def request_id=headers.zsj_request_id
+def source_system=headers.object_system
+def object_system=headers.p_source
+def code=headers.code
+def access_key=headers.zsj_access_key
+def action=headers.action
+
+
+def signStr = "version=$version&timestamp=$timestamp&request_id=$request_id&source_system=$source_system&object_system=$object_system&action=$action"
+def sign = java.util.Base64.getEncoder().encodeToString(signStr.getBytes())
+
+def headerXml="<head><version>" + version + "</version>" + "<timestamp>" + timestamp + "</timestamp>" + "<sign>" + sign + "</sign>" + "<request_id>" + request_id + "</request_id>" + "<source_system>" + source_system + "</source_system>" + "<object_system>" + object_system + "</object_system>" + "<action>" + action + "</action>" + "<access_key>" + access_key + "</access_key>" + "<code>" + code + "</code></head>"
+
+body = "<reqxml>"+headerXml+"<body><data><request><status_code>"+status_code+"</status_code><msg>"+msg+"</msg></request></data></body></reqxml>"
+```
+---
+
+- maindata_pt_response_analysis
+``` groovy
+import com.yinhai.yhbcp.engine.med.util.XmlMapUtil;
+import com.yinhai.engine.common.exception.GroovyShellException;
+
+headers.respones=body;
+
+def reqxml=null
+def status_code=null
+try{
+  reqxml = XmlMapUtil.xml2map(body, false);
+  status_code=reqxml.Body.callBussinessResponse.data.status_code;
+}
+catch(e){
+  headers.p_success="0";
+  headers.respones_error='1';
+  //throw new GroovyShellException(2010, "主数据推送方响应解析错误："+e+"\n推送方响应消息为："+body);
+  headers.logException="主数据推送方响应解析错误："+e+"\n推送方响应消息为："+body;
+  headers.logExceptionCode="20--2010"
+}
+if(status_code!=null){
+  if(status_code=='1'){
+    headers.p_success=status_code;
+  }else{
+    headers.respones_error='1'
+    headers.p_success="0";
+    //throw new GroovyShellException(2010, "主数据推送方状态码为‘" + status_code + "’错误\n推送方响应消息为："+ body);
+    if(headers.logException==null){
+      headers.logException="状态码错误\n消息为："+ body;
+      headers.logExceptionCode="20--2010"
+    }
+  }
+}else{
+  headers.p_success="0";
+  headers.respones_error='1'
+  //throw new GroovyShellException(2010, "主数据推送方响应内容错误，推送方响应消息为：\n" + body);
+  headers.logException="响应内容格式错误\n消息为："+body;
+  headers.logExceptionCode="20--2010"
+}
+
+body = body;
+```
+
+---
+
+## 2.5 需要新增的groovy脚本
+- maindata_header_amend
+``` groovy
+headers.p_target=headers.object_system;
+body=body;
+```
+![desc](http://172.20.21.108:10087/hsbSub/img/1f47cfce-61df-4277-b277-5ba5ac7e9a0b.png)
+---
+
+## 2.6 需要修改的流程
+### 2.6.1 修改log_error_log流程
+![desc](http://172.20.21.108:10087/hsbSub/img/7f1b0446-4271-4922-b685-7f85c4e91c40.png)
+``` language
+修改log_error_log流程的通用写库组件配置项目
+sql语句项改为：
+insert into pt_esb_error_log(id, p_id,p_uuid, p_source, p_target, p_jz_type,p_op_type,p_op_name,p_error_info,p_data_content,p_op_date,p_error_code) values(seq_pt_esb_error_log.nextval,rtrim(:p_id),:p_uuid,:p_source,:p_target,:p_jz_type,:p_op_type,:p_op_name,:p_error_info,:p_data_content,:p_op_date,:p_error_code)
+参数设置项改为：
+p_id=headers.p_id,p_uuid=headers.p_uuid,p_source=headers.p_source,p_target=headers.p_target,p_jz_type=headers.p_jz_type,p_op_type=headers.p_op_type,p_error_info=headers.p_error_info,p_data_content=headers.p_data_content,p_op_date=headers.p_op_date,p_op_name=headers.p_op_name,p_error_code=headers.p_error_code
+```
+---
+
+### 2.6.2 修改主数据相关的xxx_server_callClients流程
+具体需要修改的六个流程如下图
+![desc](http://172.20.21.108:10087/hsbSub/img/4ac23073-97df-4b01-920c-a4c1ebe337a5.png)
+每个流程需要修改的点都一样这里以base_server_callClients为例：
+在开始节点和主数据主数据基础数据第三方动态url服务节点之间加一个名为消息头修正的groovy脚本节点
+该节点引用过的groovy脚本中文名为“主数据消息头修正”，英文名为“maindata_header_amend”
+![desc](http://172.20.21.108:10087/hsbSub/img/f0bd5a73-9cd3-4fb0-a5e0-9812e129a770.png)
+maindata_header_amend脚本具体类容如下，并且在步骤2.5已经添加
+![desc](http://172.20.21.108:10087/hsbSub/img/90e02a2a-d3d7-4c23-8657-ab96917171a1.png)
+
+---
+
+# 3、功能说明
+## 3.1、异常信息转换
+大部分情况下服务器后台报错，都是一些英文或者一些专业词汇，对于项目上的实施人员很不友好。所以此功能主要是对后台报给前端控制台的异常信息做一次转义，相当于翻译，让实施人员能看懂。针对异常转换需要在es索引中维护异常信息，维护的这个异常信息就是异常模板。异常信息转换大致两个步骤：根据异常找到对应的异常模板、根据异常模板和异常信息进行转换。
+
+参照上面提供的es映射，exceptionClass是指异常类型，exceptionKeywords是指异常信息中的关键字，方便命中异常模板。
+
+translateMethod和translateExpressions就是配置异常转换处理逻辑。translateMethod配置以何种方式转换。Regexp即为正则。translateExpressions中的expression就是正则表达式，用于提取异常信息中的变量，templateMessage就是异常模板信息，将正则中提取的变量替换到异常模板信息中的占位符后，就是翻译后的异常信息。
+
+## 3.2、根据wsdl验证第三方厂商接口
+为了方便实施人员快速辨别三方厂商给的服务是否符合总线的标准，具体使用方法在右上角[操作手册](http://172.20.21.108:10087/hsbSub/template/index.html#/log/opManual)第六章。
+
+## 3.3 错误异常码归类
+为了方便实施人员快速定位错误原因以及在系统返回的报错xml中明确错误原因。故在pt_esb_error_log表中新增了一个p_error_code 字段该字段为错误的状态码其组成为：错误大类--错误码。目前具体的错误码和产生原因维护在在线文档 [总线错误码-原因对照表](https://docs.qq.com/sheet/DRGpLYUFSbW5pYUhL?tab=BB08J2)中，后续会集成到程序前端页面中。
+
+
+
+<p data-v-md-line="1"><strong><center><font size="5" color="#0078d7">版本v1.2.2</font></center></strong></p>
+<div data-v-md-line="2"><center>发布日期：2023年1月6日</center>
+</div><hr data-v-md-line="4">
+<h1 data-v-md-heading="_1、升级内容" data-v-md-line="6">1、升级内容</h1>
+<h2 data-v-md-heading="_1-1、新增功能" data-v-md-line="7">1.1、新增功能</h2>
+<ul data-v-md-line="8">
+<li>后端报错异常信息翻译</li>
+<li>根据wsdl验证第三方厂商接口</li>
+<li>错误异常码归类</li>
+</ul>
+<h2 data-v-md-heading="_1-2、优化内容" data-v-md-line="12">1.2、优化内容</h2>
+<ul data-v-md-line="13">
+<li>优化消息队列消费者异常处理</li>
+<li>优化启动脚本</li>
+<li>资源管理中编辑交换机关联的队列后，导致队列查询不到</li>
+<li>服务列表中，编辑服务后导致服务列表查询不到</li>
+<li>engine集群模式下，节点间通讯问题</li>
+<li>流程导入导出</li>
+<li>部署配置简化</li>
+</ul>
+<h1 data-v-md-heading="_2、升级步骤" data-v-md-line="21">2、升级步骤</h1>
+<h2 data-v-md-heading="_2-1、在es中新增异常模板映射" data-v-md-line="23">2.1、在es中新增异常模板映射</h2>
+<p data-v-md-line="24">PUT http://{es IP地址}:{es端口}/error_template</p>
+<div data-v-md-line="25"><div class="v-md-pre-wrapper v-md-pre-wrapper-json extra-class"><pre class="v-md-hljs-json"><code>{
+ 
+    <span class="hljs-attr">&quot;mappings&quot;</span>:{
+
+      <span class="hljs-attr">&quot;properties&quot;</span>:{
+        <span class="hljs-attr">&quot;exceptionClass&quot;</span>:{
+          <span class="hljs-attr">&quot;type&quot;</span>:<span class="hljs-string">&quot;keyword&quot;</span>
+        },
+        <span class="hljs-attr">&quot;exceptionKeywords&quot;</span>:{
+          <span class="hljs-attr">&quot;type&quot;</span>:<span class="hljs-string">&quot;text&quot;</span>,
+          <span class="hljs-attr">&quot;analyzer&quot;</span>:<span class="hljs-string">&quot;standard&quot;</span>
+        },
+        <span class="hljs-attr">&quot;matchMethod&quot;</span>:{
+          <span class="hljs-attr">&quot;type&quot;</span>:<span class="hljs-string">&quot;keyword&quot;</span>
+        },
+        <span class="hljs-attr">&quot;translateMethod&quot;</span>:{
+          <span class="hljs-attr">&quot;type&quot;</span>:<span class="hljs-string">&quot;keyword&quot;</span>
+        },
+        <span class="hljs-attr">&quot;translateExpressions&quot;</span>:{
+          <span class="hljs-attr">&quot;properties&quot;</span>:{
+            <span class="hljs-attr">&quot;expression&quot;</span>:{
+              <span class="hljs-attr">&quot;type&quot;</span>:<span class="hljs-string">&quot;text&quot;</span>
+            },
+            <span class="hljs-attr">&quot;templateMessage&quot;</span>:{
+              <span class="hljs-attr">&quot;type&quot;</span>:<span class="hljs-string">&quot;text&quot;</span>
+            }
+          }
+        }
+      }
+      
+    }
+ 
+}
+</code></pre>
+</div></div><h2 data-v-md-heading="_2-2、es中新增异常模板数据" data-v-md-line="61">2.2、es中新增异常模板数据</h2>
+<div data-v-md-line="62"><div class="v-md-pre-wrapper v-md-pre-wrapper-json extra-class"><pre class="v-md-hljs-json"><code>POST http://{es IP地址}:{es端口}/error_template/_doc
+ {
+    &quot;exceptionClass&quot;:&quot;com.alibaba.fastjson.JSONException&quot;,
+    &quot;exceptionKeywords&quot;:&quot; syntax error, expect {, actual [&quot;,
+    &quot;matchMethod&quot;:&quot;PrefixMatch&quot;,
+    &quot;translateMethod&quot;:&quot;Regexp&quot;,
+    &quot;translateExpressions&quot;:[
+        {
+            &quot;expression&quot;:&quot;syntax error, expect (.*?), actual (.*?), pos (.*?), line (.*?), column (\\d+)(.*)&quot;,
+            &quot;templateMessage&quot;:&quot;语法错误，期望接收：%s，实际接收为：%s ，位置: %s ,行: %s , 列: %s , 详细为：%s&quot;
+        }
+    ]
+}
+
+</code></pre>
+</div></div><div data-v-md-line="78"><div class="v-md-pre-wrapper v-md-pre-wrapper-json extra-class"><pre class="v-md-hljs-json"><code>POST http://{es IP地址}:{es端口}/error_template/_doc
+{
+    &quot;exceptionClass&quot;:&quot;feign.RetryableException&quot;,
+    &quot;exceptionKeywords&quot;:&quot; Failed to connect to executing POST&quot;,
+    &quot;matchMethod&quot;:&quot;PrefixMatch&quot;,
+    &quot;translateMethod&quot;:&quot;Regexp&quot;,
+    &quot;translateExpressions&quot;:[
+        {
+            &quot;expression&quot;:&quot; Failed to connect to /(.*?) executing POST (.*)&quot;,
+            &quot;templateMessage&quot;:&quot;不能连接到目标地址：%s，实际执行请求：%s&quot;
+        }
+    ]
+}
+
+</code></pre>
+</div></div><h2 data-v-md-heading="_2-3、执行sql" data-v-md-line="95">2.3、执行sql</h2>
+<div data-v-md-line="96"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code><span class="hljs-comment">-- 为表esb_medical.pt_esb_error_log新增一个字段</span>
+<span class="hljs-keyword">alter</span> <span class="hljs-keyword">table</span> pt_esb_error_log <span class="hljs-keyword">add</span> p_error_code varchar2(<span class="hljs-number">15</span>);
+comment <span class="hljs-keyword">on</span> <span class="hljs-keyword">column</span> pt_esb_error_log.p_error_code <span class="hljs-keyword">is</span> <span class="hljs-string">&#x27;错误编码&#x27;</span>;
+
+<span class="hljs-comment">--新增功能菜单厂商服务验证数据</span>
+<span class="hljs-keyword">insert</span> <span class="hljs-keyword">into</span> taresource (RESOURCEID, PRESOURCEID, NAME, CODE, SYSCODE, URL, ORDERNO, IDPATH, NAMEPATH, RESOURCELEVEL, ICON, ICONCOLOR, SECURITYPOLICY, SECURITYLEVEL, RESOURCETYPE, EFFECTIVE, ISDISPLAY, ISFILEDSCONTROL, CREATEDATE, CREATEUSER, UIAUTHORITYPOLICY, FIELD01, FIELD02, FIELD03, FIELD04, FIELD05, FIELD06, FIELD07, FIELD08, FIELD09, FIELD10, WORKBENCH, IMAGE)
+<span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;db6e2be2a62e4cd28c58891f81a20c92&#x27;</span>, <span class="hljs-string">&#x27;8fda3770b4684af6a0cd319a3192d6a6&#x27;</span>, <span class="hljs-string">&#x27;厂商服务验证&#x27;</span>, <span class="hljs-keyword">null</span>, <span class="hljs-string">&#x27;sysmg&#x27;</span>, <span class="hljs-string">&#x27;ptCheckServer.html#ptCheckServer&#x27;</span>, <span class="hljs-number">90</span>, <span class="hljs-string">&#x27;40337bdecb19484ebeb39d6c21aaca26/8fda3770b4684af6a0cd319a3192d6a6/db6e2be2a62e4cd28c58891f81a20c92&#x27;</span>, <span class="hljs-string">&#x27;银海软件/日志监控/厂商服务验证&#x27;</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>, <span class="hljs-string">&#x27;2&#x27;</span>, <span class="hljs-number">1</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-keyword">null</span>, to_date(<span class="hljs-string">&#x27;23-12-2022 09:53:08&#x27;</span>, <span class="hljs-string">&#x27;dd-mm-yyyy hh24:mi:ss&#x27;</span>), <span class="hljs-string">&#x27;1&#x27;</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>, <span class="hljs-keyword">null</span>, <span class="hljs-string">&#x27;0&#x27;</span>, <span class="hljs-keyword">null</span>);
+ 
+</code></pre>
+</div></div><h2 data-v-md-heading="_2-4、本次升级脚本、配置更改" data-v-md-line="107">2.4、本次升级脚本、配置更改</h2>
+<p data-v-md-line="108">本次升级启动脚本start.sh和config目录下app.properties文件做了升级改动</p>
+<h2 data-v-md-heading="_2-5、需要修改的groovy脚本" data-v-md-line="110">2.5、需要修改的groovy脚本</h2>
+<ul data-v-md-line="111">
+<li>pt_esb_resp<br>
+<font color="red">该资源不在groovy里而是在“SOAP请求报文脚本”中！！！别改错了</font><br>
+<font color="red">该资源不在groovy里而是在“SOAP请求报文脚本”中！！！别改错了</font><br>
+<font color="red">该资源不在groovy里而是在“SOAP请求报文脚本”中！！！别改错了</font></li>
+</ul>
+<div data-v-md-line="115"><div class="v-md-pre-wrapper v-md-pre-wrapper-xml extra-class"><pre class="v-md-hljs-xml"><code><span class="hljs-tag">&lt;<span class="hljs-name">soap:Envelope</span> <span class="hljs-attr">xmlns:soap</span>=<span class="hljs-string">&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;</span>&gt;</span>
+   <span class="hljs-tag">&lt;<span class="hljs-name">soap:Body</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">ns2:callBussinessResponse</span> <span class="hljs-attr">xmlns:ns2</span>=<span class="hljs-string">&quot;http://esb.webservice&quot;</span>&gt;</span>
+         <span class="hljs-tag">&lt;<span class="hljs-name">data</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">status_code</span>&gt;</span>${data.result_code}<span class="hljs-tag">&lt;/<span class="hljs-name">status_code</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">msg</span>&gt;</span>
+	            ${data.msg}
+          <span class="hljs-tag">&lt;/<span class="hljs-name">msg</span>&gt;</span>
+         <span class="hljs-tag">&lt;/<span class="hljs-name">data</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">ns2:callBussinessResponse</span>&gt;</span>
+   <span class="hljs-tag">&lt;/<span class="hljs-name">soap:Body</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">soap:Envelope</span>&gt;</span>
+</code></pre>
+</div></div><hr data-v-md-line="129">
+<ul data-v-md-line="131">
+<li>pt_esb_tran</li>
+</ul>
+<div data-v-md-line="133"><div class="v-md-pre-wrapper v-md-pre-wrapper-groovy extra-class"><pre class="v-md-hljs-groovy"><code><span class="hljs-keyword">import</span> java.lang.Integer;
+
+<span class="hljs-keyword">def</span> code = result.code;
+<span class="hljs-keyword">def</span> errmsg = result.sub_msg;
+<span class="hljs-keyword">def</span> sub_msg = result.sub_msg;
+<span class="hljs-keyword">def</span> sub_code = result.sub_code;
+
+
+data.status_code = code;
+data.result_desc = errmsg;
+data.result_code = sub_code
+
+<span class="hljs-keyword">int</span> code1 = Integer.valueOf(code);
+
+<span class="hljs-keyword">if</span> (code1 &gt;=<span class="hljs-number">0</span>) {
+  data.orgdata = result.biz_data;
+  data.outflag = <span class="hljs-string">&quot;prox&quot;</span>;
+}
+<span class="hljs-keyword">else</span> {
+    data.msg =  errmsg;
+}
+</code></pre>
+</div></div><hr data-v-md-line="156">
+<ul data-v-md-line="158">
+<li>soapCheck</li>
+</ul>
+<div data-v-md-line="159"><div class="v-md-pre-wrapper v-md-pre-wrapper-groovy extra-class"><pre class="v-md-hljs-groovy"><code><span class="hljs-keyword">import</span> com.yinhai.yhbcp.engine.med.util.XmlMapUtil
+<span class="hljs-keyword">import</span> com.yinhai.yhbcp.engine.med.util.GlobalVariableUtil
+<span class="hljs-keyword">import</span> com.yinhai.bcp.common.api.ErrorConstants
+<span class="hljs-keyword">import</span> com.yinhai.engine.common.exception.GroovyShellException
+<span class="hljs-keyword">import</span> java.net.URLEncoder
+<span class="hljs-keyword">import</span> java.time.LocalDateTime
+
+<span class="hljs-comment">//headers.request_body = URLEncoder.encode(body, &quot;UTF-8&quot;)</span>
+
+<span class="hljs-keyword">def</span> date = <span class="hljs-keyword">new</span> Date()
+headers.p_original_date=date
+
+headers.respones_error = <span class="hljs-string">&#x27;0&#x27;</span>
+headers.p_success = <span class="hljs-string">&#x27;0&#x27;</span>
+<span class="hljs-keyword">def</span> reqxml = XmlMapUtil.xml2map(body, <span class="hljs-literal">false</span>)
+
+<span class="hljs-keyword">def</span> Base64Sign = reqxml.head.sign
+<span class="hljs-keyword">def</span> sign = <span class="hljs-keyword">new</span> String(Base64Sign.decodeBase64(), <span class="hljs-string">&#x27;utf-8&#x27;</span>)
+<span class="hljs-keyword">def</span> version = reqxml.head.version
+<span class="hljs-keyword">def</span> code = reqxml.head.code
+<span class="hljs-keyword">def</span> timestamp = reqxml.head.timestamp
+<span class="hljs-keyword">def</span> request_id = reqxml.head.request_id
+<span class="hljs-keyword">def</span> source_system = reqxml.head.source_system
+<span class="hljs-keyword">def</span> object_system = reqxml.head.object_system
+<span class="hljs-keyword">def</span> action = reqxml.head.action
+
+<span class="hljs-keyword">def</span> check = <span class="hljs-string">&quot;version=$version&amp;timestamp=$timestamp&amp;request_id=$request_id&amp;source_system=$source_system&amp;object_system=$object_system&amp;action=$action&quot;</span>
+<span class="hljs-keyword">if</span> (sign != check) {
+    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> GroovyShellException(<span class="hljs-number">2001</span>, <span class="hljs-string">&quot;sign验证失败&quot;</span>)
+}
+
+headers.action = action
+headers.sign = sign
+headers.p_source = source_system
+headers.p_target = object_system
+headers.code = code
+
+body = body
+</code></pre>
+</div></div><hr data-v-md-line="199">
+<ul data-v-md-line="201">
+<li>actionError</li>
+</ul>
+<div data-v-md-line="202"><div class="v-md-pre-wrapper v-md-pre-wrapper-groovy extra-class"><pre class="v-md-hljs-groovy"><code><span class="hljs-keyword">import</span> com.yinhai.engine.common.exception.GroovyShellException
+
+<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> GroovyShellException(<span class="hljs-number">2002</span>, <span class="hljs-string">&quot;没有找到对应的action&quot;</span>)
+body = body;
+</code></pre>
+</div></div><hr data-v-md-line="208">
+<ul data-v-md-line="210">
+<li>xieku</li>
+</ul>
+<div data-v-md-line="211"><div class="v-md-pre-wrapper v-md-pre-wrapper-groovy extra-class"><pre class="v-md-hljs-groovy"><code><span class="hljs-keyword">import</span> java.net.URLDecoder
+<span class="hljs-keyword">import</span> java.time.LocalDateTime
+
+<span class="hljs-keyword">if</span>(headers.action!=<span class="hljs-literal">null</span>){
+    headers.action = URLDecoder.decode(headers.action, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.sign!=<span class="hljs-literal">null</span>){
+    headers.sign = URLDecoder.decode(headers.sign, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.p_source!=<span class="hljs-literal">null</span>){
+    headers.p_source = URLDecoder.decode(headers.p_source, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.p_target!=<span class="hljs-literal">null</span>){
+    headers.p_target = URLDecoder.decode(headers.p_target, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.code!=<span class="hljs-literal">null</span>){
+    headers.code = URLDecoder.decode(headers.code, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.logSerialNumber!=<span class="hljs-literal">null</span>){
+    headers.p_uuid = URLDecoder.decode(headers.logSerialNumber, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.logContent!=<span class="hljs-literal">null</span>){
+    headers.p_data_content = URLDecoder.decode(headers.logContent, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.logException!=<span class="hljs-literal">null</span>){
+    headers.p_error_info = URLDecoder.decode(headers.logException, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.logExceptionCode!=<span class="hljs-literal">null</span>){
+    headers.p_error_code = URLDecoder.decode(headers.logExceptionCode, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.p_id!=<span class="hljs-literal">null</span>){
+    headers.p_id = URLDecoder.decode(headers.p_id, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.p_jz_type!=<span class="hljs-literal">null</span>){
+    headers.p_jz_type = URLDecoder.decode(headers.p_jz_type, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.p_op_type!=<span class="hljs-literal">null</span>){
+    headers.p_op_type = URLDecoder.decode(headers.p_op_type, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+<span class="hljs-keyword">if</span>(headers.p_original_date!=<span class="hljs-literal">null</span>){
+    headers.p_original_date = headers.p_original_date
+}
+<span class="hljs-keyword">if</span>(headers.p_op_name!=<span class="hljs-literal">null</span>){
+    headers.p_op_name = URLDecoder.decode(headers.p_op_name, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+headers.p_op_date = LocalDateTime.now()
+<span class="hljs-keyword">if</span>(headers.p_success!=<span class="hljs-literal">null</span>){
+    headers.p_success = URLDecoder.decode(headers.p_success, <span class="hljs-string">&quot;UTF-8&quot;</span>);
+}
+
+body=body
+</code></pre>
+</div></div><hr data-v-md-line="264">
+<ul data-v-md-line="266">
+<li>responseStatus</li>
+</ul>
+<div data-v-md-line="267"><div class="v-md-pre-wrapper v-md-pre-wrapper-groovy extra-class"><pre class="v-md-hljs-groovy"><code><span class="hljs-keyword">import</span> com.yinhai.yhbcp.engine.med.util.XmlMapUtil;
+
+headers.respones=body;
+
+<span class="hljs-keyword">def</span> reqxml=<span class="hljs-literal">null</span>
+<span class="hljs-keyword">def</span> status_code=<span class="hljs-literal">null</span>
+<span class="hljs-keyword">try</span>{
+    reqxml = XmlMapUtil.xml2map(body, <span class="hljs-literal">false</span>);
+    status_code=reqxml.Body.callBussinessResponse.data.status_code;
+}
+<span class="hljs-keyword">catch</span>(e){
+    headers.p_success=<span class="hljs-string">&quot;0&quot;</span>;
+    headers.respones_error=<span class="hljs-string">&#x27;1&#x27;</span>
+    headers.logException=<span class="hljs-string">&quot;三方系统响应内容格式错误&quot;</span>+e+<span class="hljs-string">&quot;\n消息为：&quot;</span>+body;
+    headers.logExceptionCode=<span class="hljs-string">&quot;20--2008&quot;</span>
+}
+<span class="hljs-keyword">if</span>(status_code!=<span class="hljs-literal">null</span>){
+  <span class="hljs-keyword">if</span>(status_code==<span class="hljs-string">&#x27;1&#x27;</span>){
+    headers.p_success=status_code;
+  }<span class="hljs-keyword">else</span>{
+    headers.respones_error=<span class="hljs-string">&#x27;1&#x27;</span>
+    headers.p_success=<span class="hljs-string">&quot;0&quot;</span>;
+    <span class="hljs-keyword">if</span>(headers.logException==<span class="hljs-literal">null</span>){
+    headers.logException=<span class="hljs-string">&quot;三方系统响应状态码错误\n消息为：&quot;</span>+headers.respones;
+    headers.logExceptionCode=<span class="hljs-string">&quot;20--2008&quot;</span>
+    }
+  }
+}<span class="hljs-keyword">else</span>{
+    headers.p_success=<span class="hljs-string">&quot;0&quot;</span>;
+    headers.respones_error=<span class="hljs-string">&#x27;1&#x27;</span>
+    headers.logException=<span class="hljs-string">&quot;三方系统响应内容格式错误\n消息为：&quot;</span>+body;
+    headers.logExceptionCode=<span class="hljs-string">&quot;20--2008&quot;</span>
+}
+
+body = body;
+</code></pre>
+</div></div><hr data-v-md-line="304">
+<ul data-v-md-line="306">
+<li>maindata_response_analysis</li>
+</ul>
+<div data-v-md-line="307"><div class="v-md-pre-wrapper v-md-pre-wrapper-groovy extra-class"><pre class="v-md-hljs-groovy"><code><span class="hljs-keyword">import</span> com.yinhai.yhbcp.engine.med.util.XpathUtil;
+<span class="hljs-keyword">import</span> <span class="hljs-keyword">static</span> java.nio.charset.StandardCharsets.UTF_8;
+<span class="hljs-keyword">import</span> java.net.URLEncoder;
+<span class="hljs-keyword">import</span> com.yinhai.engine.common.exception.GroovyShellException;
+
+<span class="hljs-keyword">def</span> namespace =<span class="hljs-string">&quot;soap=http://schemas.xmlsoap.org/soap/envelope/,ns2=http://esb.webservice&quot;</span>
+<span class="hljs-keyword">def</span> codeEx =<span class="hljs-string">&quot;/soap:Envelope/soap:Body/ns2:callBussinessResponse/data/status_code&quot;</span>
+<span class="hljs-keyword">def</span> msgEx =<span class="hljs-string">&quot;/soap:Envelope/soap:Body/ns2:callBussinessResponse/data/msg&quot;</span>
+
+<span class="hljs-keyword">def</span> status_code=<span class="hljs-literal">null</span>
+<span class="hljs-keyword">def</span> msg=<span class="hljs-literal">null</span>
+<span class="hljs-keyword">try</span>{
+  status_code=XpathUtil.getNodeValue(namespace, codeEx, body)
+  msg = XpathUtil.getNodeValue(namespace, msgEx, body)
+}
+<span class="hljs-keyword">catch</span>(e){
+  headers.p_success=<span class="hljs-string">&quot;0&quot;</span>;
+  headers.respones_error=<span class="hljs-string">&#x27;1&#x27;</span>
+  <span class="hljs-comment">//throw new GroovyShellException(2009, &quot;主数据接收方响应内容格式错误: &quot;+e+&quot;\n接收方响应的消息为：&quot;+body);</span>
+  headers.logException=<span class="hljs-string">&quot;主数据接收方响应内容格式错误: &quot;</span>+e+<span class="hljs-string">&quot;\n接收方响应的消息为：&quot;</span>+body;
+  headers.logExceptionCode=<span class="hljs-string">&quot;20--2009&quot;</span>
+}
+<span class="hljs-keyword">if</span>(status_code!=<span class="hljs-literal">null</span>){
+  <span class="hljs-keyword">if</span>(status_code==<span class="hljs-string">&#x27;1&#x27;</span>){
+    headers.p_success=<span class="hljs-string">&#x27;2&#x27;</span>;
+  }<span class="hljs-keyword">else</span>{
+    headers.respones_error=<span class="hljs-string">&#x27;1&#x27;</span>
+    headers.p_success=<span class="hljs-string">&quot;0&quot;</span>;
+    headers.logException=<span class="hljs-string">&quot;主数据接收方响应状态码为：‘&quot;</span> + status_code + <span class="hljs-string">&quot;’非约的定成功响应码\n接收方响应的消息为：&quot;</span>+body;
+    headers.logExceptionCode=<span class="hljs-string">&quot;20--2009&quot;</span>
+    <span class="hljs-comment">//throw new GroovyShellException(2009, &quot;主数据接收方响应状态码为：‘&quot; + status_code + &quot;’非约的定成功响应码\n接收方响应的消息为：&quot;+body);</span>
+  }
+}<span class="hljs-keyword">else</span>{
+  headers.p_success=<span class="hljs-string">&quot;0&quot;</span>;
+  headers.respones_error=<span class="hljs-string">&#x27;1&#x27;</span>;
+  <span class="hljs-comment">//throw new GroovyShellException(2009, &quot;主数据接收方响应内容格式错误,接收方响应的消息为：&quot;+body);</span>
+  headers.logException=<span class="hljs-string">&quot;主数据接收方响应内容格式错误,接收方响应的消息为：&quot;</span>+body;
+  headers.logExceptionCode=<span class="hljs-string">&quot;20--2009&quot;</span>
+}
+
+<span class="hljs-keyword">def</span> version=headers.version
+<span class="hljs-keyword">def</span> timestamp=headers.zsj_timestamp
+<span class="hljs-keyword">def</span> request_id=headers.zsj_request_id
+<span class="hljs-keyword">def</span> source_system=headers.object_system
+<span class="hljs-keyword">def</span> object_system=headers.p_source
+<span class="hljs-keyword">def</span> code=headers.code
+<span class="hljs-keyword">def</span> access_key=headers.zsj_access_key
+<span class="hljs-keyword">def</span> action=headers.action
+
+
+<span class="hljs-keyword">def</span> signStr = <span class="hljs-string">&quot;version=$version&amp;timestamp=$timestamp&amp;request_id=$request_id&amp;source_system=$source_system&amp;object_system=$object_system&amp;action=$action&quot;</span>
+<span class="hljs-keyword">def</span> sign = java.util.Base64.getEncoder().encodeToString(signStr.getBytes())
+
+<span class="hljs-keyword">def</span> headerXml=<span class="hljs-string">&quot;&lt;head&gt;&lt;version&gt;&quot;</span> + version + <span class="hljs-string">&quot;&lt;/version&gt;&quot;</span> + <span class="hljs-string">&quot;&lt;timestamp&gt;&quot;</span> + timestamp + <span class="hljs-string">&quot;&lt;/timestamp&gt;&quot;</span> + <span class="hljs-string">&quot;&lt;sign&gt;&quot;</span> + sign + <span class="hljs-string">&quot;&lt;/sign&gt;&quot;</span> + <span class="hljs-string">&quot;&lt;request_id&gt;&quot;</span> + request_id + <span class="hljs-string">&quot;&lt;/request_id&gt;&quot;</span> + <span class="hljs-string">&quot;&lt;source_system&gt;&quot;</span> + source_system + <span class="hljs-string">&quot;&lt;/source_system&gt;&quot;</span> + <span class="hljs-string">&quot;&lt;object_system&gt;&quot;</span> + object_system + <span class="hljs-string">&quot;&lt;/object_system&gt;&quot;</span> + <span class="hljs-string">&quot;&lt;action&gt;&quot;</span> + action + <span class="hljs-string">&quot;&lt;/action&gt;&quot;</span> + <span class="hljs-string">&quot;&lt;access_key&gt;&quot;</span> + access_key + <span class="hljs-string">&quot;&lt;/access_key&gt;&quot;</span> + <span class="hljs-string">&quot;&lt;code&gt;&quot;</span> + code + <span class="hljs-string">&quot;&lt;/code&gt;&lt;/head&gt;&quot;</span>
+
+body = <span class="hljs-string">&quot;&lt;reqxml&gt;&quot;</span>+headerXml+<span class="hljs-string">&quot;&lt;body&gt;&lt;data&gt;&lt;request&gt;&lt;status_code&gt;&quot;</span>+status_code+<span class="hljs-string">&quot;&lt;/status_code&gt;&lt;msg&gt;&quot;</span>+msg+<span class="hljs-string">&quot;&lt;/msg&gt;&lt;/request&gt;&lt;/data&gt;&lt;/body&gt;&lt;/reqxml&gt;&quot;</span>
+</code></pre>
+</div></div><hr data-v-md-line="365">
+<ul data-v-md-line="367">
+<li>maindata_pt_response_analysis</li>
+</ul>
+<div data-v-md-line="368"><div class="v-md-pre-wrapper v-md-pre-wrapper-groovy extra-class"><pre class="v-md-hljs-groovy"><code><span class="hljs-keyword">import</span> com.yinhai.yhbcp.engine.med.util.XmlMapUtil;
+<span class="hljs-keyword">import</span> com.yinhai.engine.common.exception.GroovyShellException;
+
+headers.respones=body;
+
+<span class="hljs-keyword">def</span> reqxml=<span class="hljs-literal">null</span>
+<span class="hljs-keyword">def</span> status_code=<span class="hljs-literal">null</span>
+<span class="hljs-keyword">try</span>{
+  reqxml = XmlMapUtil.xml2map(body, <span class="hljs-literal">false</span>);
+  status_code=reqxml.Body.callBussinessResponse.data.status_code;
+}
+<span class="hljs-keyword">catch</span>(e){
+  headers.p_success=<span class="hljs-string">&quot;0&quot;</span>;
+  headers.respones_error=<span class="hljs-string">&#x27;1&#x27;</span>;
+  <span class="hljs-comment">//throw new GroovyShellException(2010, &quot;主数据推送方响应解析错误：&quot;+e+&quot;\n推送方响应消息为：&quot;+body);</span>
+  headers.logException=<span class="hljs-string">&quot;主数据推送方响应解析错误：&quot;</span>+e+<span class="hljs-string">&quot;\n推送方响应消息为：&quot;</span>+body;
+  headers.logExceptionCode=<span class="hljs-string">&quot;20--2010&quot;</span>
+}
+<span class="hljs-keyword">if</span>(status_code!=<span class="hljs-literal">null</span>){
+  <span class="hljs-keyword">if</span>(status_code==<span class="hljs-string">&#x27;1&#x27;</span>){
+    headers.p_success=status_code;
+  }<span class="hljs-keyword">else</span>{
+    headers.respones_error=<span class="hljs-string">&#x27;1&#x27;</span>
+    headers.p_success=<span class="hljs-string">&quot;0&quot;</span>;
+    <span class="hljs-comment">//throw new GroovyShellException(2010, &quot;主数据推送方状态码为‘&quot; + status_code + &quot;’错误\n推送方响应消息为：&quot;+ body);</span>
+    <span class="hljs-keyword">if</span>(headers.logException==<span class="hljs-literal">null</span>){
+      headers.logException=<span class="hljs-string">&quot;状态码错误\n消息为：&quot;</span>+ body;
+      headers.logExceptionCode=<span class="hljs-string">&quot;20--2010&quot;</span>
+    }
+  }
+}<span class="hljs-keyword">else</span>{
+  headers.p_success=<span class="hljs-string">&quot;0&quot;</span>;
+  headers.respones_error=<span class="hljs-string">&#x27;1&#x27;</span>
+  <span class="hljs-comment">//throw new GroovyShellException(2010, &quot;主数据推送方响应内容错误，推送方响应消息为：\n&quot; + body);</span>
+  headers.logException=<span class="hljs-string">&quot;响应内容格式错误\n消息为：&quot;</span>+body;
+  headers.logExceptionCode=<span class="hljs-string">&quot;20--2010&quot;</span>
+}
+
+body = body;
+</code></pre>
+</div></div><hr data-v-md-line="410">
+<h2 data-v-md-heading="_2-5-需要新增的groovy脚本" data-v-md-line="412">2.5 需要新增的groovy脚本</h2>
+<ul data-v-md-line="413">
+<li>maindata_header_amend</li>
+</ul>
+<div data-v-md-line="414"><div class="v-md-pre-wrapper v-md-pre-wrapper-groovy extra-class"><pre class="v-md-hljs-groovy"><code>headers.p_target=headers.object_system;
+body=body;
+</code></pre>
+</div></div><h2 data-v-md-heading="desc-http-172-20-21-108-10087-hsbsub-img-1f47cfce-61df-4277-b277-5ba5ac7e9a0b-png" data-v-md-line="418"><img src="http://172.20.21.108:10087/hsbSub/img/1f47cfce-61df-4277-b277-5ba5ac7e9a0b.png" alt="desc"></h2>
+<h2 data-v-md-heading="_2-6-需要修改的流程" data-v-md-line="421">2.6 需要修改的流程</h2>
+<h3 data-v-md-heading="_2-6-1-修改log-error-log流程" data-v-md-line="422">2.6.1 修改log_error_log流程</h3>
+<p data-v-md-line="423"><img src="http://172.20.21.108:10087/hsbSub/img/7f1b0446-4271-4922-b685-7f85c4e91c40.png" alt="desc"></p>
+<div data-v-md-line="424"><div class="v-md-pre-wrapper v-md-pre-wrapper-language extra-class"><pre class="v-md-hljs-language"><code>修改log_error_log流程的通用写库组件配置项目
+sql语句项改为：
+insert into pt_esb_error_log(id, p_id,p_uuid, p_source, p_target, p_jz_type,p_op_type,p_op_name,p_error_info,p_data_content,p_op_date,p_error_code) values(seq_pt_esb_error_log.nextval,rtrim(:p_id),:p_uuid,:p_source,:p_target,:p_jz_type,:p_op_type,:p_op_name,:p_error_info,:p_data_content,:p_op_date,:p_error_code)
+参数设置项改为：
+p_id=headers.p_id,p_uuid=headers.p_uuid,p_source=headers.p_source,p_target=headers.p_target,p_jz_type=headers.p_jz_type,p_op_type=headers.p_op_type,p_error_info=headers.p_error_info,p_data_content=headers.p_data_content,p_op_date=headers.p_op_date,p_op_name=headers.p_op_name,p_error_code=headers.p_error_code
+</code></pre>
+</div></div><hr data-v-md-line="431">
+<h3 data-v-md-heading="_2-6-2-修改主数据相关的xxx-server-callclients流程" data-v-md-line="433">2.6.2 修改主数据相关的xxx_server_callClients流程</h3>
+<p data-v-md-line="434">具体需要修改的六个流程如下图<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/4ac23073-97df-4b01-920c-a4c1ebe337a5.png" alt="desc"><br>
+每个流程需要修改的点都一样这里以base_server_callClients为例：<br>
+在开始节点和主数据主数据基础数据第三方动态url服务节点之间加一个名为消息头修正的groovy脚本节点<br>
+该节点引用过的groovy脚本中文名为“主数据消息头修正”，英文名为“maindata_header_amend”<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/f0bd5a73-9cd3-4fb0-a5e0-9812e129a770.png" alt="desc"><br>
+maindata_header_amend脚本具体类容如下，并且在步骤2.5已经添加<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/90e02a2a-d3d7-4c23-8657-ab96917171a1.png" alt="desc"></p>
+<hr data-v-md-line="443">
+<h1 data-v-md-heading="_3、功能说明" data-v-md-line="445">3、功能说明</h1>
+<h2 data-v-md-heading="_3-1、异常信息转换" data-v-md-line="446">3.1、异常信息转换</h2>
+<p data-v-md-line="447">大部分情况下服务器后台报错，都是一些英文或者一些专业词汇，对于项目上的实施人员很不友好。所以此功能主要是对后台报给前端控制台的异常信息做一次转义，相当于翻译，让实施人员能看懂。针对异常转换需要在es索引中维护异常信息，维护的这个异常信息就是异常模板。异常信息转换大致两个步骤：根据异常找到对应的异常模板、根据异常模板和异常信息进行转换。</p>
+<p data-v-md-line="449">参照上面提供的es映射，exceptionClass是指异常类型，exceptionKeywords是指异常信息中的关键字，方便命中异常模板。</p>
+<p data-v-md-line="451">translateMethod和translateExpressions就是配置异常转换处理逻辑。translateMethod配置以何种方式转换。Regexp即为正则。translateExpressions中的expression就是正则表达式，用于提取异常信息中的变量，templateMessage就是异常模板信息，将正则中提取的变量替换到异常模板信息中的占位符后，就是翻译后的异常信息。</p>
+<h2 data-v-md-heading="_3-2、根据wsdl验证第三方厂商接口" data-v-md-line="453">3.2、根据wsdl验证第三方厂商接口</h2>
+<p data-v-md-line="454">为了方便实施人员快速辨别三方厂商给的服务是否符合总线的标准，具体使用方法在右上角<a href="http://172.20.21.108:10087/hsbSub/template/index.html#/log/opManual" target="_blank">操作手册</a>第六章。</p>
+<h2 data-v-md-heading="_3-3-错误异常码归类" data-v-md-line="456">3.3 错误异常码归类</h2>
+<p data-v-md-line="457">为了方便实施人员快速定位错误原因以及在系统返回的报错xml中明确错误原因。故在pt_esb_error_log表中新增了一个p_error_code 字段该字段为错误的状态码其组成为：错误大类–错误码。目前具体的错误码和产生原因维护在在线文档 <a href="https://docs.qq.com/sheet/DRGpLYUFSbW5pYUhL?tab=BB08J2" target="_blank">总线错误码-原因对照表</a>中，后续会集成到程序前端页面中。</p>

@@ -1,0 +1,194 @@
+V1.2.1
+http://172.20.21.108:10087/hsbSub/program/V1.2.1/V1.2.1.zip
+
+<center><font size='6'>HSB-v1.2.1 升级清单</font></center>
+
+>版本号：V1.2.1
+发布日期：2022/12/2
+**<font color='red'>注意：需要先停止所有应用，并严格按照从上到下执行升级步骤</font>**
+
+## 1.1、升级内容
+1. 服务导入导出
+   优化服务导入导出，导出效率更快。
+   支持流程导入，现将服务流程中的id替换为英文标识，更加灵活。
+
+2. 优化打包方式
+   打包为统一的zip，将各种启动、停止、收集数据(堆栈、线程栈等)脚本、配置统一管理，简化项目实施部署流程
+
+3. 服务列表查询
+   解决bug：服务编排同时关联 注册服务、发布服务导致服务列表查询不出来
+调整查询逻辑，增加中间关联表，查询效率更高和逻辑更简单
+
+4. groovy脚本热更新
+  动态更新groovy脚本不需要重新停启服务
+
+5. 增加版本管理
+   增加各个应用版本号
+
+6. 密码泄漏安全问题
+   调整部分泄漏密码的接口
+
+7. 资源管理增加redis缓存
+
+## 1.2、执行脚本
+1. 数据库sql
+``` sql
+UPDATE ESB_ENDPOINT_LINK el SET el.ENDPOINTKEY = (SELECT em.ENDPOINTKEY FROM ESB_ENDPOINT_METADATA em WHERE  el.LINKENDPOINTID  = em.ENDPOINTID);
+
+UPDATE ESB_ENDPOINT_LINK el SET el.ENDPOINTKEY = el.LINKENDPOINTID  WHERE ENDPOINTKEY IS NULL ;
+
+-- 将ESB_ENDPOINT_LINK ENDPOINTKEY 设为非空字段
+ALTER TABLE ESB_ENDPOINT_LINK MODIFY ENDPOINTKEY NOT NULL;
+
+-- 发布服务管理查询优化，新增发布服务及服务提供者关联表
+CREATE TABLE MED_ESB_SERVICE_PROVIDER_LINK (
+                                        SERVICEKEY VARCHAR2(200) NOT NULL ENABLE,
+                                        PROVIDERKEY VARCHAR2(200),
+                                        LINKENDPOINTKEY VARCHAR2(300) NOT NULL ENABLE,
+                                        CONSTRAINT MED_ESB_SERVICE_PROVIDER_LINK_PK PRIMARY KEY (SERVICEKEY, LINKENDPOINTKEY)
+);
+
+
+COMMENT ON COLUMN MED_ESB_SERVICE_PROVIDER_LINK.SERVICEKEY IS '服务标识';
+COMMENT ON COLUMN MED_ESB_SERVICE_PROVIDER_LINK.PROVIDERKEY IS '服务提供者标识';
+COMMENT ON COLUMN MED_ESB_SERVICE_PROVIDER_LINK.LINKENDPOINTKEY IS '关联接入服务标识';
+COMMENT ON TABLE MED_ESB_SERVICE_PROVIDER_LINK IS '发布服务及服务提供者关联表';
+
+
+
+TRUNCATE  table ESB_ENDPOINT_LINK_TEMP;
+TRUNCATE  TABLE ESB_SERVICE_FLOW_TEMP;
+TRUNCATE  TABLE ESB_SERVICE_LINK_TEMP;
+TRUNCATE  TABLE ESB_SERVICE_METADATA_TEMP;
+```
+## 1.3、执行转换数据程序
+1. 获取迁移程序
+[V1.2.1升级到v1.2.2转换数据程序](http://172.20.21.108:10087/hsbSub/program/middleware/hsb_serviceflow_transform-1.0.jar)
+
+2. 执行如下命令
+  ``` powershell
+java -Ddb_url={数据库地址} -Ddb_username={用户名} -Ddb_password={密码} -jar hsb_serviceflow_transform-1.0.jar
+```
+执行命令后，界面出现如下输出，则数据迁移完毕。
+===============交换机重构完成================
+===============队列重构完成==================
+===============服务流程重构完成===============
+===============发布服务信息数据迁移结束========
+
+## 1.4、更改配置文件
+修改解压后zip文件中config目录下的app.properties文件
+
+## 1.5、启动
+启动、停止应用只需要执行解压后zip文件中bin目录下对应的start.sh、stop.sh脚本即可。
+![desc](http://172.20.21.108:10087/hsbSub/img/fa6a5ee4-33a5-4e99-b135-97c3ad6104d3.png)
+
+## 1.6、查看版本号
+新增应用版本号查询接口
+console：
+http://{ip}:{port}/console/appinfo/version
+![desc](http://172.20.21.108:10087/hsbSub/img/e11971e7-88ed-4fc3-aa3c-90cbb7ae6401.png)
+engine：
+http://{ip}:{port}/engine/appinfo/version
+![desc](http://172.20.21.108:10087/hsbSub/img/c4040bb6-2c09-4266-9af9-96fa9b609748.png)
+
+
+<div data-v-md-line="1"><center><font size="6">HSB-v1.2.1 升级清单</font></center>
+</div><blockquote data-v-md-line="3">
+<p data-v-md-line="3">版本号：V1.2.1<br>
+发布日期：2022/12/2<br>
+<strong><font color="red">注意：需要先停止所有应用，并严格按照从上到下执行升级步骤</font></strong></p>
+</blockquote>
+<h2 data-v-md-heading="_1-1、升级内容" data-v-md-line="7">1.1、升级内容</h2>
+<ol data-v-md-line="8">
+<li>
+<p data-v-md-line="8">服务导入导出<br>
+优化服务导入导出，导出效率更快。<br>
+支持流程导入，现将服务流程中的id替换为英文标识，更加灵活。</p>
+</li>
+<li>
+<p data-v-md-line="12">优化打包方式<br>
+打包为统一的zip，将各种启动、停止、收集数据(堆栈、线程栈等)脚本、配置统一管理，简化项目实施部署流程</p>
+</li>
+<li>
+<p data-v-md-line="15">服务列表查询<br>
+解决bug：服务编排同时关联 注册服务、发布服务导致服务列表查询不出来<br>
+调整查询逻辑，增加中间关联表，查询效率更高和逻辑更简单</p>
+</li>
+<li>
+<p data-v-md-line="19">groovy脚本热更新<br>
+动态更新groovy脚本不需要重新停启服务</p>
+</li>
+<li>
+<p data-v-md-line="22">增加版本管理<br>
+增加各个应用版本号</p>
+</li>
+<li>
+<p data-v-md-line="25">密码泄漏安全问题<br>
+调整部分泄漏密码的接口</p>
+</li>
+<li>
+<p data-v-md-line="28">资源管理增加redis缓存</p>
+</li>
+</ol>
+<h2 data-v-md-heading="_1-2、执行脚本" data-v-md-line="30">1.2、执行脚本</h2>
+<ol data-v-md-line="31">
+<li>数据库sql</li>
+</ol>
+<div data-v-md-line="32"><div class="v-md-pre-wrapper v-md-pre-wrapper-sql extra-class"><pre class="v-md-hljs-sql"><code>UPDATE ESB_ENDPOINT_LINK el <span class="hljs-keyword">SET</span> el.ENDPOINTKEY <span class="hljs-operator">=</span> (<span class="hljs-keyword">SELECT</span> em.ENDPOINTKEY <span class="hljs-keyword">FROM</span> ESB_ENDPOINT_METADATA em <span class="hljs-keyword">WHERE</span>  el.LINKENDPOINTID  <span class="hljs-operator">=</span> em.ENDPOINTID);
+
+UPDATE ESB_ENDPOINT_LINK el <span class="hljs-keyword">SET</span> el.ENDPOINTKEY <span class="hljs-operator">=</span> el.LINKENDPOINTID  <span class="hljs-keyword">WHERE</span> ENDPOINTKEY <span class="hljs-keyword">IS</span> <span class="hljs-keyword">NULL</span> ;
+
+<span class="hljs-comment">-- 将ESB_ENDPOINT_LINK ENDPOINTKEY 设为非空字段</span>
+<span class="hljs-keyword">ALTER</span> <span class="hljs-keyword">TABLE</span> ESB_ENDPOINT_LINK MODIFY ENDPOINTKEY <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span>;
+
+<span class="hljs-comment">-- 发布服务管理查询优化，新增发布服务及服务提供者关联表</span>
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> MED_ESB_SERVICE_PROVIDER_LINK (
+                                        SERVICEKEY VARCHAR2(<span class="hljs-number">200</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span> ENABLE,
+                                        PROVIDERKEY VARCHAR2(<span class="hljs-number">200</span>),
+                                        LINKENDPOINTKEY VARCHAR2(<span class="hljs-number">300</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">NULL</span> ENABLE,
+                                        <span class="hljs-keyword">CONSTRAINT</span> MED_ESB_SERVICE_PROVIDER_LINK_PK <span class="hljs-keyword">PRIMARY</span> KEY (SERVICEKEY, LINKENDPOINTKEY)
+);
+
+
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ESB_SERVICE_PROVIDER_LINK.SERVICEKEY <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;服务标识&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ESB_SERVICE_PROVIDER_LINK.PROVIDERKEY <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;服务提供者标识&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">COLUMN</span> MED_ESB_SERVICE_PROVIDER_LINK.LINKENDPOINTKEY <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;关联接入服务标识&#x27;</span>;
+COMMENT <span class="hljs-keyword">ON</span> <span class="hljs-keyword">TABLE</span> MED_ESB_SERVICE_PROVIDER_LINK <span class="hljs-keyword">IS</span> <span class="hljs-string">&#x27;发布服务及服务提供者关联表&#x27;</span>;
+
+
+
+<span class="hljs-keyword">TRUNCATE</span>  <span class="hljs-keyword">table</span> ESB_ENDPOINT_LINK_TEMP;
+<span class="hljs-keyword">TRUNCATE</span>  <span class="hljs-keyword">TABLE</span> ESB_SERVICE_FLOW_TEMP;
+<span class="hljs-keyword">TRUNCATE</span>  <span class="hljs-keyword">TABLE</span> ESB_SERVICE_LINK_TEMP;
+<span class="hljs-keyword">TRUNCATE</span>  <span class="hljs-keyword">TABLE</span> ESB_SERVICE_METADATA_TEMP;
+</code></pre>
+</div></div><h2 data-v-md-heading="_1-3、执行转换数据程序" data-v-md-line="61">1.3、执行转换数据程序</h2>
+<ol data-v-md-line="62">
+<li>
+<p data-v-md-line="62">获取迁移程序<br>
+<a href="http://172.20.21.108:10087/hsbSub/program/middleware/hsb_serviceflow_transform-1.0.jar" target="_blank">V1.2.1升级到v1.2.2转换数据程序</a></p>
+</li>
+<li>
+<p data-v-md-line="65">执行如下命令</p>
+</li>
+</ol>
+<div data-v-md-line="66"><div class="v-md-pre-wrapper v-md-pre-wrapper-powershell extra-class"><pre class="v-md-hljs-powershell"><code>java <span class="hljs-literal">-Ddb_url</span>={数据库地址} <span class="hljs-literal">-Ddb_username</span>={用户名} <span class="hljs-literal">-Ddb_password</span>={密码} <span class="hljs-literal">-jar</span> hsb_serviceflow_transform<span class="hljs-literal">-1</span>.<span class="hljs-number">0</span>.jar
+</code></pre>
+</div></div><p data-v-md-line="69">执行命令后，界面出现如下输出，则数据迁移完毕。<br>
+===============交换机重构完成================<br>
+===============队列重构完成==================<br>
+===============服务流程重构完成===============<br>
+===============发布服务信息数据迁移结束========</p>
+<h2 data-v-md-heading="_1-4、更改配置文件" data-v-md-line="75">1.4、更改配置文件</h2>
+<p data-v-md-line="76">修改解压后zip文件中config目录下的app.properties文件</p>
+<h2 data-v-md-heading="_1-5、启动" data-v-md-line="78">1.5、启动</h2>
+<p data-v-md-line="79">启动、停止应用只需要执行解压后zip文件中bin目录下对应的start.sh、stop.sh脚本即可。<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/fa6a5ee4-33a5-4e99-b135-97c3ad6104d3.png" alt="desc"></p>
+<h2 data-v-md-heading="_1-6、查看版本号" data-v-md-line="82">1.6、查看版本号</h2>
+<p data-v-md-line="83">新增应用版本号查询接口<br>
+console：<br>
+http://{ip}:{port}/console/appinfo/version<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/e11971e7-88ed-4fc3-aa3c-90cbb7ae6401.png" alt="desc"><br>
+engine：<br>
+http://{ip}:{port}/engine/appinfo/version<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/c4040bb6-2c09-4266-9af9-96fa9b609748.png" alt="desc"></p>

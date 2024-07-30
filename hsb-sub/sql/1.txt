@@ -1,0 +1,2341 @@
+HSB操作手册
+**<center><font size='5' color='#0078d7'>HSB 操 作 手 册</font></center>**
+----
+>  为了让使用者可以更快速，方便且全面的了解集成平台是如何使用的，以及都包含了哪些内容，故提供此文档供大家参考
+
+# 1 接入管理
+>所有和平台进行交互的子系统都需要先在此进行“新增系统”操作，以便使用者进行查询，编辑，删除及管理（启用，停用，授权等），某个系统都被哪些服务注册使用了也可在此查询。
+## 1.1 新增接入系统
+![desc](http://172.20.21.108:10087/hsbSub/img/9a65e5de-8d99-4eba-93f5-3a7236a4e4c7.png)
+<center>主界面</center>
+
+### 1.1.1 系统配置
+点击接入管理----接入系统管理------新增---出现以下界面
+![desc](http://172.20.21.108:10087/hsbSub/img/1f057825-cc50-434f-82b1-1941dccdbc66.png)
+- 系统标识：根据接口文档名称命名，例如：医院信息平台数据交换总线-血透系统数据交互接口文档.doc--此处能填hemoClient  
+- 系统名称：同上，有中文名称写XXX系统，没有则写英文+系统，如：血透系统
+- 系统类型：WEB端
+- 应用类型：普调应用
+- 应用角色：服务提供者和消费者
+- 验证类型：RSA签名验证
+- 验证签名：不勾选
+- 其他选项有则默认选项，没有则不填，之后点击保存，出现成功标识即可。
+
+注：根据接口文档中的事件列表中的提供系统和消费系统，有几个不一样的系统需要注册几个，如果系统已经注册则不需要重新注册，例如：医院信息平台数据交换总线-血透系统数据交互接口文档.doc中此处有3个不同的系统，分别为HIS系统，HEMO系统,HIIP系统：但是HIS系统之前已经注册过就不用管了，只需注册其他两个即可。
+
+# 2 服务管理
+> 任何客户端及第三方等想使用平台进行交互，都必须要在平台上先进行注册服务，之后每个服务都可以作为生产者和消费者来生产和消费信息，通过集成平台来实现信息的交互。
+![desc](http://172.20.21.108:10087/hsbSub/img/2093e0cb-e4bb-4c6b-af05-03d6a57bb960.png)
+<center>主界面</center>
+
+## 2.1 服务注册
+注册soap或Rabbitmq服务等，供之后服务流程编排使用。
+### 2.1.1 Soap服务注册
+#### 2.1.1.1 服务配置
+点击服务管理—服务注册管理—服务注册—soap出现以下界面
+![desc](http://172.20.21.108:10087/hsbSub/img/cffdcc05-7f65-42fe-bb91-915ce3221a8c.png)
+- 服务名称：事件列表中所列的消费系统和提供系统（见接口文档，如果已经存在不需要重建）
+- 命名方式：以血透系统为例，应为hemo+Client=hemoClient
+- 服务提供者：选择相对应的系统即可
+- 所处网络区域：内网区
+- WSDL地址：自定义，规范为：http://本地路径:端口号/自定义标识?wsdl
+  例：http://192.168.100.168:8055/m?wsdl
+- 名称空间：webservice的targetNamespace 
+  例：http://HSB.webservice
+- 验证方式：不验证
+- 请求报文模板：soap请求报文模板
+- 响应解析脚本：soap解析模板
+- 入参格式：XML
+- 出参格式：XML
+- 其他选项有则默认选项，没有则不填，之后点击保存，出现成功标识即可。
+
+注：根据接口文档中的事件列表中的提供系统和消费系统，有几个不一样的系统需要注册几个，如果系统已经注册则不需要重新注册，例如：医院信息平台数据交换总线-血透系统数据交互接口文档.doc中此处有3个不同的系统，分别为HIS系统，HEMO系		     统,HIIP系统：但是HIS系统之前已经注册过就不用管了，只需注册其他两个即可。
+
+### 2.1.2 交换机服务注册（RabbitMQ服务）
+#### 2.1.2.1 服务配置
+点击服务管理—服务注册管理—服务注册—RabbitMQ出现以下界面
+![desc](http://172.20.21.108:10087/hsbSub/img/72e52714-ab6e-4a4e-8aa3-caee84f6b027.png)
+- 服务名称：自定义
+- 服务提供者：HSB
+- 服务协议：RabbitMQ
+- 所处网络区域：内网区
+- addresses：地址
+- vhost：
+- 连接超时（ms）：500
+- 用户名称：名
+- 用户密码：密码
+- 入参格式：XML
+- 出参格式：XML
+## 2.2 服务发布
+> 对外发布服务，并提供服务调用。支持原子发布、组装发布。
+### 2.2.1 原子服务
+> 将第三方注册的单个接口在HSB上进行发布，供客户端进行调用。相当于客户端请求HSB，HSB将请求转发给第三方。
+#### 2.2.1.1 新增原子服务
+![desc](http://172.20.21.108:10087/hsbSub/img/1b38100a-cd04-4269-873a-3b7258359c89.png)
+##### 2.2.1.1.1 服务配置
+- 服务标识：服务唯一标识名，全局唯一。
+- 服务名称：服务名称
+![desc](http://172.20.21.108:10087/hsbSub/img/910ddd49-b21e-4460-8654-67c4b8e5b88a.png)
+##### 2.2.1.1.2 发布服务
+1. 选择注册的服务（注册服务请查看xxx）
+2. 如需冲正服务，可以点击下一步选择冲正服务。
+3. 点击发布
+![desc](http://172.20.21.108:10087/hsbSub/img/c0d18072-a60d-461a-8a03-994e46e6c217.png)
+##### 2.2.1.1.3 测试
+
+<table>
+  <tr>
+    <td>请求方式</td> 
+    <td colspan="3">http</td> 
+  </tr>
+  <tr>
+    <td>请求数据格式</td> 
+    <td colspan="3">表单</td> 
+  </tr>
+  <tr>
+    <td>请求参数</td> 
+    <td colspan="3"></td> 
+  </tr>
+  <tr>
+    <td>参数</td> 
+    <td>参数说明</td> 
+    <td>是否必填</td> 
+    <td>备注</td> 
+  </tr>
+  <tr>
+    <td>access_key</td> 
+    <td>接入系统标识</td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>format</td> 
+    <td>返回数据格式json/xml</td> 
+    <td>否</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>request_id</td> 
+    <td>请求唯一编码(流水号)</td> 
+    <td>否</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>version</td> 
+    <td>版本号</td> 
+    <td>否</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>sign</td> 
+    <td>参数签名</td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>timestamp</td> 
+    <td>发送请求的时间(毫秒)</td> 
+    <td>否</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>biz_content</td> 
+    <td>业务参数</td> 
+    <td>是</td> 
+    <td>根据真实服务的入参类型来修改，包括:对象、数组、布尔值、 列表、数字、字符串、XML)</td> 
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td>响应参数</td> 
+    <td colspan="3"></td> 
+  </tr>
+  <tr>
+    <td>参数</td> 
+    <td>参数说明</td> 
+    <td>是否必返</td> 
+    <td>备注</td> 
+  </tr>
+  <tr>
+    <td>code</td> 
+    <td>返回code</td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>msg</td> 
+    <td>返回描述</td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>sub_code</td> 
+    <td></td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>sub_msg</td> 
+    <td></td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>biz_data</td> 
+    <td>业务数据</td> 
+    <td>是</td> 
+    <td>HSB调用第三方服务返回的响应数据</td> 
+  </tr>
+</table>
+
+![desc](http://172.20.21.108:10087/hsbSub/img/8a57dcd1-a3fe-4d12-9e96-8bff4eaefc08.png)
+
+### 2.2.2 组装服务
+> 在现有的一个或者多个服务进行组装、编排，增加额外的处理逻辑，使其具备更完善的业务功能。
+#### 2.2.2.1 新增组装服务
+![desc](http://172.20.21.108:10087/hsbSub/img/dc53b48b-d842-4211-bd28-d2dc7471362d.png)
+##### 2.2.2.1.1 服务配置
+![desc](http://172.20.21.108:10087/hsbSub/img/e37d8fba-21a6-497b-9692-dd953c4b3c89.png)
+##### 2.2.2.1.2 添加服务
+选择需要组合的服务(包括已注册的服务，已发布的服务)，并点击 添加到已选， 点击 下一步 进入到编排界面
+![desc](http://172.20.21.108:10087/hsbSub/img/1b07eba5-a112-4579-b891-06b8c0109545.png)
+被选中的服务将会在编排界面的左侧。
+![desc](http://172.20.21.108:10087/hsbSub/img/4b91a344-8eaf-457c-98ba-4c4ced6f198f.png)
+#### 2.2.2.2 服务编排
+> 在开始服务编排之前将会对常用编排组件做详细介绍，为后续服务编排做准备。
+##### 2.2.2.2.1 编排流程
+> 为了让读者能快速理解服务编排，并快速上手。下面以院内的实际业务作为例子进行讲解，让读者能够全面的了解。院内的服务怎么从注册到HSB后，根据具体实际业务进行编排组合，使其具备实际业务功能供外部调用。
+
+下面以《血透管理系统数据交互接口》接口文档为例，将血透系统提供的接口注册到HSB,并暴露一个统一的服务接口供外部调用，编排完的服务如下图所示
+![desc](http://172.20.21.108:10087/hsbSub/img/dea0d8bf-12f2-444f-99d8-5bcc265ae067.png)
+整个的处理流程如下图所示：
+![desc](http://172.20.21.108:10087/hsbSub/img/76f59f9e-16b4-4e54-84e5-89ece3b564f1.png)
+下面将详细的介绍每一个步骤。
+##### 2.2.2.2.2 请求验证
+为了验证请求合法性，需要对请求中一些参数做一些校验。在本例的业务场景中，将请求报文中的/reqxml/head节点下的version、code、timestamp、request_id、source_system、object_system、action做参数拼接并与sign做base64解码后的值做对比，如果值一致则验证通过。可以在界面直接查看校验逻辑的groovy脚本
+![desc](http://172.20.21.108:10087/hsbSub/img/5be4eeba-67b5-41ae-aeb0-5ace94ed239f.png)
+**<font color='red'>注意：此处的请求校验是本业务的校验逻辑，根据具体业务而定，而并非HSB系统的请求校验。**</font>
+##### 2.2.2.2.3 请求分发
+> 请求分发相当于路由功能，根据不同的业务参数执行不同的业务逻辑。在本例中，根据报文中的/reqxml/head/action节点数据作为路由键。使用 **<font color='red'>条件路由组件</font>** ，在不同的分支路径上使用xpath表达式。
+##### 2.2.2.2.4 异步调用
+> 为了提高HSB系统的吞吐量和对客户端请求的响应速度，在本服务编排中使用的 **rabbitmq消息队列组件(此组件使用参考 服务资源管理-消息队列)** ，将请求存入到消息队列中，然后异步处理消息队列中的业务请求逻辑。
+![desc](http://172.20.21.108:10087/hsbSub/img/95903b29-21d9-48c9-86a8-200515441394.png)
+如下图所示，请求消息往如下三个队列中存放，再发布一个服务消费如下队列中的消息便是异步处理请求了。
+![desc](http://172.20.21.108:10087/hsbSub/img/0410c97e-111a-4a4b-92a6-9e6518ea8b2c.png)
+##### 2.2.2.2.5 异步响应
+可以通过groovy脚本对客户端调用进行响应。
+![desc](http://172.20.21.108:10087/hsbSub/img/d2878094-c2c9-4c61-8ae9-2453c72fc5d2.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/c37f6840-1b7e-47ca-80f3-3bc2bfc71d59.png)
+##### 2.2.2.2.6 异常处理
+#### 2.2.2.3 编排组件
+##### 2.2.2.3.1 写库组件
+> 对于一些需要写入数据库的操作可以使用通用写库组件，sql语句输入执行的sql，参数设置则对sql中的参数进行赋值。
+
+![desc](http://172.20.21.108:10087/hsbSub/img/aa68aabb-9eeb-4457-a329-68b266281999.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/20414cbd-91b6-47be-8495-a8a29560cd3a.png)
+##### 2.2.2.3.2 cdr数据处理
+![desc](http://172.20.21.108:10087/hsbSub/img/9e5f3e42-a64b-4179-a63a-3145dff8b400.png)
+##### 2.2.2.3.3 第三方服务调用
+![desc](http://172.20.21.108:10087/hsbSub/img/52b8cd0b-9637-44a3-a12e-926926b00810.png)
+##### 2.2.2.3.4 HSB消息日志
+![desc](http://172.20.21.108:10087/hsbSub/img/affecfee-7a5f-46ee-88ee-5dfd19fe9b93.png)
+##### 2.2.2.3.5 消息日志处理
+消息日志需要写入三张表
+- pt_HSB_message_log 请求报文日志表(记录每次请求的请求报文，每次调用只记录一次)
+- pt_HSB_process_log 流程处理日志(记录每个流程的处理日志)
+- pt_HSB_error_log 错误日志(每个流程的错误日志)
+![desc](http://172.20.21.108:10087/hsbSub/img/58267d9e-6de5-4fd3-9a8b-8db63fafda13.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/e9ac37b4-e816-4138-a115-9cbd8c3eed2f.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/85df2dde-6f55-4e1f-b496-9ff6e87d6a49.png)
+##### 2.2.2.3.6 主数据分发器
+- 使用场景：用于主数据服务调用多个第三方服务的情况，主数据分发器将调用平台的服务，按分发规则，调用多个第三方服务
+- 组件操作：
+![desc](http://172.20.21.108:10087/hsbSub/img/811a2834-59af-4435-9db2-b272ee64ecf4.png)
+- 配置参数说明：
+![desc](http://172.20.21.108:10087/hsbSub/img/3c24ed9b-6ed3-4d92-aba9-06b63e37715d.png)
+- 拆分节点、分隔符：分发器根据拆分节点指定的节点名或字段名内容，按分隔符进行分割，示例
+![desc](http://172.20.21.108:10087/hsbSub/img/f75ee270-2ea9-4245-b5ce-5611372ed4ac.png)
+<object_system>HIS@123456,LIS@123456</object_system>
+分离处理为两个报文：
+<object_system>HIS@123456</object_system>
+<object_system>LIS@123456</object_system>
+
+- 主数据处理服务：对分离后报文处理的平台已发布的服务
+![desc](http://172.20.21.108:10087/hsbSub/img/b39bb6c4-623c-4747-9c94-a5c7c2491729.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/2156b797-6ce1-482f-b77e-dcfeaf99e47a.png)
+
+- 第三方url参数:分离后报文调用第三方服务的url地址
+名称1=url地址1,名称2=url地址2,.....
+eg:HIS@123456=http://127.0.0.1:8080/engine/services/HSBwebservice/mdb_demo_pushHosp,LIS@123456=http://127.0.0.1:8080/engine/services/HSBwebservice/mdb_demo_pushHosp1
+参数里的名称，与拆分节点拆分后的名称一致，如拆分节点值拆分后在第三方url参数配置中没有，平台不能调用这个分离名称。
+- 动态调用第三方服务：
+根据主数据分发器分发url执行第三方调用，在服务注册管理中，注册soap协议服务
+![desc](http://172.20.21.108:10087/hsbSub/img/a201af8d-2878-48b2-9cee-356919b83baf.png)
+动态调用，将wsdl地址的ip设置为0.0.0.0。
+- 主数据服务配置流程：
+![desc](http://172.20.21.108:10087/hsbSub/img/6b31492c-81cd-4c2b-99ff-a1112d117a40.png)
+##### 2.2.2.3.7 xml报文分发器
+- 使用场景：
+用于xml报文服务调用分发为多个报文体服务的情况，xml报文分发器将调用平台的服务，按分发规则，分发为多个服务体服务。
+- 组件操作：
+![desc](http://172.20.21.108:10087/hsbSub/img/84e8a397-df17-4f9c-a0d7-d2395406b04b.png)
+- 配置参数说明：
+![desc](http://172.20.21.108:10087/hsbSub/img/98bd0af4-3420-4e70-95f0-f1c334662ec0.png)
+- 分发节点名：
+xml报文分发器根据指定的分发节点名，进行分割，示例
+![desc](http://172.20.21.108:10087/hsbSub/img/e3064923-c170-4777-99ea-71bd13ad1e8a.png)
+分离处理为两个报文：
+``` xml
+<data>
+  <request_details>
+    <detail>
+      <org_code>1</org_code>
+    </detail>
+  </request_details>
+</data>
+--------------------------------------------------------------------------------------------------
+<data>
+  <request_details>
+    <detail>
+      <org_code>123</org_code>
+    </detail>
+  </request_details>
+</data>
+```
+- 处理服务标识：对报文分发后调用平台已发布的服务
+![desc](http://172.20.21.108:10087/hsbSub/img/69811b28-cb25-4475-916a-d18194b94cfd.png)
+## 2.3 服务治理
+### 2.3.1 错误日志
+> 作用：当项目启动加载服务时，记录服务运行成功还是运行失败，并能够从服务治理-错误日志中查看
+![desc](http://172.20.21.108:10087/hsbSub/img/ac873f97-9158-4f36-a04f-3c8e5584f5ef.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/35f9b2b4-19cf-480c-a126-20ac0f2229b0.png)
+### 2.3.2 服务资源管理
+#### 2.3.2.1 数据校验
+##### 2.3.2.1.1 jsonschema
+- 作用：jsonschema可以注释和验证json文档。资料链接：https://json-schema.org/
+- 新增：
+![desc](http://172.20.21.108:10087/hsbSub/img/266da872-bbdb-4f17-811f-2bc52dc747bc.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/ac039f0a-8869-485a-8c0e-207d1266cfc7.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/97406bdf-6277-410b-92a3-dcc54ddbdead.png)
+- 名称/英文名称:jsonschema的资源名称，名称可重复，所有资源的英文名称都不可重复。
+- 所属目录：资源存放的路径
+- 编辑/下载/停用：![desc](http://172.20.21.108:10087/hsbSub/img/ab1ce44e-a0ca-41a7-a545-a147438dc28a.png)
+- 导入/导出：![desc](http://172.20.21.108:10087/hsbSub/img/3b834a59-f408-47c5-8112-6a98fe30520f.png)
+- 测试：
+![desc](http://172.20.21.108:10087/hsbSub/img/a8dce096-7f11-4baf-a444-f06bb8443fef.png)
+点击测试按钮，会检查JSON文本内容符不符合JSONSCHEMA内容。
+- 生成： ![desc](http://172.20.21.108:10087/hsbSub/img/8be938c1-072a-402f-ba2a-e04f50b3634e.png)
+点击生成按钮，可以生成JSONSCHEMA内容。
+- 测试操作：![desc](http://172.20.21.108:10087/hsbSub/img/1d0c5680-b928-4923-b722-a8aefb6b4053.png)
+点击测试按钮，会校验JSON文本内容符不符合JSONSCHEMA规定。
+-jsonschema测试数据:
+``` json
+jsonschema：
+{
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "age": {
+      "type": "integer"
+    }
+  },
+  "title": "一个对象",
+  "type": "object"
+}
+
+json:
+{
+  "name": "name",
+  "address": "dfdfdf",
+  "age":12
+}
+```
+
+##### 2.3.2.1.2 xsd
+> 作用：当服务被调用时，需要对服务调用方传过来的参数做校验，XSD就是一种校验方式。
+- 新增： 
+![desc](http://172.20.21.108:10087/hsbSub/img/dbbf070a-2348-4664-aa08-e890e8493dca.png)
+- 名称/英文名称:xsd的资源名称，名称可重复，所有资源的英文名称都不可重复。
+- 所属目录：资源存放的路径
+- 编辑/下载/停用：![desc](http://172.20.21.108:10087/hsbSub/img/014aba03-5550-41df-bc03-2b7ddd4475e8.png)
+- 测试：
+![desc](http://172.20.21.108:10087/hsbSub/img/5dc958e6-8d47-43ec-a7b7-a2d8238485f0.png)
+- 导出：
+![desc](http://172.20.21.108:10087/hsbSub/img/9b17cc0e-6d50-4283-865f-b4717d0d8ffc.png)
+- 导入：
+![desc](http://172.20.21.108:10087/hsbSub/img/c5990369-62e7-43ae-bf76-8414e8af5b73.png)
+- xsd测试数据：
+``` xml
+<!--正确能通过测试的xml-->
+<?xml version="1.0"?>
+<note
+    xmlns="http://www.w3school.com.cn"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.w3school.com.cn note.xsd">
+    <to>George</to>
+    <from>John</from>
+    <heading>Reminder</heading>
+    <body>Don't forget the meeting!</body>
+</note>
+
+<!--不能通过测试的xml-->
+<?xml version="1.0"?>
+<note>
+    <to>George</to>
+    <from>John</from>
+    <heading>Reminder</heading>
+    <body>Don't forget the meeting!</body>
+</note>
+
+<!-- xsd -->
+<?xml version="1.0"?>
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+targetNamespace="http://www.w3school.com.cn"
+    xmlns="http://www.w3school.com.cn"
+elementFormDefault="qualified">
+    <xs:element name="note">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="to" type="xs:string"/>
+                <xs:element name="from" type="xs:string"/>
+                <xs:element name="heading" type="xs:string"/>
+                <xs:element name="body" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
+```
+- 服务编排时的使用场景：
+![desc](http://172.20.21.108:10087/hsbSub/img/cbb53942-1cf9-4494-9ad0-537fa42ee9ab.png)![desc](http://172.20.21.108:10087/hsbSub/img/3c4f9933-b07a-40e6-8a6f-862da7f83471.png)
+在此选择在服务资源管理new里面定义的xsd资源。
+
+#### 2.3.2.2 转换脚本
+> 操作说明：xslt、jolt、groovy、soap请求报文脚本、soap响应报文脚本、密钥证书、变量的操作流程都一样这里就用xslt为例统一说下操作方法，其它可以此为参考。
+- 导出操作：选中需要导出的xslt资源然后点击导出按钮即可
+![desc](http://172.20.21.108:10087/hsbSub/img/957fb3df-d4cd-4098-bb58-1dc20a25df12.png)
+- 新增xstl操作：点击导入.xslt
+![desc](http://172.20.21.108:10087/hsbSub/img/dc7fb358-1b9e-4671-a803-9b7372494907.png)![desc](http://172.20.21.108:10087/hsbSub/img/7b2f3d6c-7a96-4a6f-acfa-4c1a19902c06.png)
+- 导入操作：点击批量导入按钮然后上传导出的文件即可，<font color='red'>需要说明的是由于资源英文名不可重复所以如果新导入的资源英文名与现有资源英文名重名的话系统会自动在新导入的资源的英文名后面追加一串数，且新导入的资源是没有所属目录的。</font>
+![desc](http://172.20.21.108:10087/hsbSub/img/ec9ef7e0-519e-499a-ad7c-ff29aa01b839.png)![desc](http://172.20.21.108:10087/hsbSub/img/3c418d36-1188-4798-8d8e-e7b63c899a00.png)
+<font color='red'>导入导出操作说明：由于总线中很多资源数据都可以在各个项目上通用的，所以为了资源数据能够复用以及快速初始化新项目所以才设计了资源导入导出这两个功能。</font>
+- 下载：就是下载xstl文件本身
+![desc](http://172.20.21.108:10087/hsbSub/img/c756439d-2d10-41df-a201-bd355904b9a4.png)
+- 编辑：对资源内容进行修改。
+- 测试：对输入（导入）脚本正确性经行校验，以xslt为例我们可以输入待转换脚本然后点击测试看右边是否会输出正确的转换后的xml
+![desc](http://172.20.21.108:10087/hsbSub/img/c128024a-1b2f-4c3a-8675-3b6f05a9dcd4.png)
+- 停用：停用该资源（编辑新流程的时候无法选择该资源）
+##### 2.3.2.2.1 xslt
+> 资源作用：在某些业务场景下会出现三方的接口字段和平台给出的接口字段不一致的情况，该资源的作用就是将三方给出的xml转换为符合平台规范的xml（反之亦然）。
+
+在流程中的使用：
+![desc](http://172.20.21.108:10087/hsbSub/img/28787018-8a8b-4470-88ba-2ff7825eee6a.png)
+入参出差格式选择xml然后选择对应的xslt资源
+![desc](http://172.20.21.108:10087/hsbSub/img/38069513-6afa-4a10-b967-fd47b3f3d415.png)
+##### 2.3.2.2.2 jolt
+> 资源说明：应用场景和xslt一样，但该资源转换的是json数据而非xml数据。
+
+在流程中的使用：
+![desc](http://172.20.21.108:10087/hsbSub/img/1d7c3843-1bfb-4152-964a-45b42a5122b2.png)
+入参出参格式选择JSON，然后选择对应jolt脚本资源
+![desc](http://172.20.21.108:10087/hsbSub/img/82a6e46c-fba3-4e4e-a5ee-0e035b30608b.png)
+##### 2.3.2.2.3 groovy
+> 资源说明：Groovy是一种基于JVM（Java虚拟机）的敏捷开发语言，它能够与 Java 代码很好地结合用于扩展现有代码。在HSB中他的用处多用于读取以及操作HSB中消息头和消息体信息让我们在编排流程的时候根据这些信息判断该消息下一步流向或者在必要的时候对消息进行定义或修改(因为上述各种操作只有在具体业务流程编排的时候才知道怎么做，我们的总线开发人员是无法在开发程序时就预料到所有业务场景的，因此需要这么一个语言来提高总线在各种业务场景下的泛用性)。
+groovy的语法(类java)这里就不做介绍，这里只对个别特有方法或变量的含义进行说明
+headers: 指在总线中传输的消息的消息头（可类比为信封表面写的那些寄信人，邮箱等信息）,可以将其想象成为键值对，赋值操作很简单比如现在要给头加上一个a属性哪么只需要如下写“ headers.a='xxx' ”即可。
+
+<font color='red'>***headers属性保留字段（如果属性名字符合以下规则的则该属性不会生效）***
+1 以“sys_”、“Camel”开头
+2 等于以下字段(大小写敏感)：access_key、request_id、sign、timestamp
+3等于以下字段（大小写不敏感）：Accept-Encoding、Content-Length、ResponseContext
+4空字串</font>
+body: 指在总线中传输的消息的消息头（可类比为信封里面装的信），对body赋值也很简单body=value，这里的value可以时变量也可以是常量
+**XmlMapUtil.xml2map(body, false)：将body里面的xml转换为map键值对，后面的bool参数指是否需要在返回的map里加根节点键 
+throw new GroovyShellException(int(异常码), String(报错原因))：在groovy里面需要抛出错误时只能写这个异常，抛出其它异常系统是无法捕捉到的。
+XpathUtil.getNodeValue(namespace, expression, reqxml)：这个方法可以根据xpath表达式获取到xml里对应的节点的值。namespace表示xml的命名空间如果没有写null，expression指xpath表达式（这里不展开自行百度），reqxml为需要解析的xml
+GlobalVariableUtil.getValue("""isOpenHemoHisClient""")：这个方法是获取全局变量，至于这些变量的值可以在这个页面看到**
+![desc](http://172.20.21.108:10087/hsbSub/img/48f5d6fc-4c02-4d17-8029-8912545374dc.png)
+在流程中的使用：
+![desc](http://172.20.21.108:10087/hsbSub/img/3e054585-3df2-4563-be31-c5df976c1f63.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/990e6939-9e9c-4d23-8bcf-c1bcb92022e5.png)
+##### 2.3.2.2.4 soap请求报文脚本
+> 资源作用：他本质上是个freemark模板脚本，我们给定一个模板脚本这样就可以将soap请求数据插入模板脚本中使得数据的格式统一
+
+使用: 
+![desc](http://172.20.21.108:10087/hsbSub/img/6df9e0d0-271a-4705-b0be-6c76cde471d9.png)
+
+##### 2.3.2.2.5 soap响应解析脚本
+> 资源作用：他本质上是个grooovy脚本，用于解析三方的响应来判断我们这条消息是否有成功发送给三方或者三方是否成功处理了该消息。
+
+在流程中的使用：
+![desc](http://172.20.21.108:10087/hsbSub/img/a0f0dcd2-42e9-4471-92aa-1721a30ed1f0.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/a826dfb5-72d2-41a2-8c99-5d42697fcbdd.png)
+
+#### 2.3.2.3 密钥证书
+#### 2.3.2.4 变量
+> 资源作用：用于服务编排时groovy脚本中经常使用到的一些固定的值，把这些值放在一起方便统一管理以及提高脚本常量的规范性。
+
+具体用法如下（groovy语法中也有提到）：GlobalVariableUtil.getValue("""isOpenHemoHisClient""")
+具体页面如下（操作都很常规就不一一截图介绍了）：
+![desc](http://172.20.21.108:10087/hsbSub/img/670f552a-b841-4cac-bee5-5964408a8f68.png)
+- 系统常用全局变量说明
+
+|序号|变量名|变量中文名|说明|
+|:-|:-|:-|:-|
+|1|sysRabbitmqPrefetchCount|系统变量-rabbitmq消费者取消息条数|rabbitmq消费者取消息条数;用于非顺序消费时消费者一次取的消息条数<br/>如果不设置该变更，默认取消息条数为200|
+
+#### 2.3.2.5 消息队列
+> 资源作用：将上一个节点传递的消息发送到对应交换机，其它服务从队列中消费消息，以此完成整个服务流程。
+
+![desc](http://172.20.21.108:10087/hsbSub/img/aec55e89-2135-448c-9e77-7b5321032822.png)![desc](http://172.20.21.108:10087/hsbSub/img/661b299f-6cd6-4056-b588-b307297044d4.png)
+在这个服务中配置成生产者，选定对应的交换机,配置了对应消费者的服务就能接收到消息。
+![desc](http://172.20.21.108:10087/hsbSub/img/9aebdd93-a8bd-4ef1-a43d-44cb52e81a7f.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/beca9729-4e9f-4925-9eb8-1db77618485a.png)
+##### 2.3.2.5.1 交换机
+![desc](http://172.20.21.108:10087/hsbSub/img/c518d777-6d4f-42ce-bce2-f3522e4175e0.png)
+上图名称、英文名称、所属目录的含义和其它资源没有区别。
+rabbit服务：服务注册里注册的rabbitmq服务
+类型：分为广播（fanout）、路由键匹配（topic）两种模式，广播会将消息发送到交换机里所有队列，路由键匹配会根据routingkey去匹配。
+其它参数配置：可以通过deadLetterQueue="deadLetterQueue1" & skipQueueBind = false类似的方式为交换机配置参数。参考camel rabbitmq组件选项
+##### 2.3.2.5.2 队列
+![desc](http://172.20.21.108:10087/hsbSub/img/b0841f14-89da-4c6e-afae-8855d6f58730.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/57204d7f-276e-4a01-a680-49e3d0071a8d.png)
+点击队列管理就可以进入操作队列的页面，队列管理中是交换机所绑定的队列。
+队列名称、英文名称和其他的资源一样。
+队列路由key:队列绑定的routingkey，当交换机为路由键匹配模式时据此匹配交换机里的消息。
+消费者名称/英文名称：服务编排时可以通过此名称找到对应队列
+是否手工确认：**消息是在得到确认（Acknowledged，ACK）后，从队列中移除的。默认情况下，消息确认是自动进行的，消息在发送给消费者后立即确认。为避免消息丢失，可以手工确认，自行管理消息接收确认的时机。**
+是否独占：选择独占则一个队列只会被一个节点消费，非独占则可能被多个节点消费
+是否顺序执行：顺序执行时消息的消费是有序的，消费完上一条消息才会消费下一条，非顺序执行时则是无序的
+
+#### 2.3.2.6 CDR
+> 使用场景：用于消息写CDR数据库
+
+组件配置说明：
+![desc](http://172.20.21.108:10087/hsbSub/img/71688d10-bc27-4e3f-883e-741f99ba6a93.png)
+- 表报文对照：报文节点=表虚拟名,不区分大小写
+- 报文节点，是指定消息报中body中xml中的节点，不区分大小，节点名不用指定路径，只指定最末支节点名。
+- 表虚拟名，是指将body中xml中的节点映射成一个虚拟表名，cdr表操作配置中使用该表虚拟名进行配置。
+
+  示例：detail=PT_OPERATION_EVENT，表示detial节点映射成PT_OPERATION_EVENT
+  ![desc](http://172.20.21.108:10087/hsbSub/img/c7cf02c6-b076-4c52-ac24-b316178759a8.png)
+
+- 表字段对照资源名：写cdr表操作的配置资源名，在服务管理->服务资源管理->CDR功能下进行cdr资源的配置。
+- 数据源：写cdr表操作使用的数据源，在服务管理->服务资源管理->数据库/api->数据源资源管理功能下进行数据库连接的配置。
+
+### 2.3.3 服务导入导出
+> 作用:当在一个新环境部署总线项目时，或者需要从一个环境复制服务到别的环境时，通过服务导入导出可以快速地配置出一个类似的服务。<font color='red'>需要注意的是，服务中与消息队列相关的部分需要手动处理。</font>
+
+导出：
+![desc](http://172.20.21.108:10087/hsbSub/img/6d0a3ce4-b27b-4e51-a51e-779db3add218.png)
+导入：
+![desc](http://172.20.21.108:10087/hsbSub/img/99e2aabf-fbe7-4760-bbf8-44401c2d0f9a.png)
+
+## 2.4 任务调度
+### 2.4.1 执行器管理
+![desc](http://172.20.21.108:10087/hsbSub/img/b5631883-1982-4cda-b3e0-a44926247340.png)
+说明：新增执行器，其中AppName与服务后端配置AppName一致；机器地址自动获取将自动获取 http://{ip}:{port}/ 格式的地址，也可手动配置该格式地址，可省获取自动地址间隔时间。
+### 2.4.2 任务管理
+![desc](http://172.20.21.108:10087/hsbSub/img/f4072964-c130-4b77-82b9-f1a8142f6b59.png)
+#### 2.4.2.1 新增任务
+![desc](http://172.20.21.108:10087/hsbSub/img/ad95c086-7e3a-48aa-949b-3ee6e065aec4.png)
+任务参数说明：传入json串键serverName，将指定调用某发布服务；传入json串键body携带调用服务的报文
+``` language
+任务参数示例：调用scheduled_tasks_delete_log服务:
+
+{serverName:'scheduled_tasks_delete_log',body:'<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:esb="http://esb.webservice">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <esb:callBussiness>
+         <!--Optional:-->
+         <message><![CDATA[<?xml version="1.0" encoding="utf-8"?>        
+<reqxml>
+	<head>
+		<version>1</version>
+		<timestamp>20191001091221</timestamp>
+	<sign>dmVyc2lvbj0xJnRpbWVzdGFtcD0yMDE5MTAwMTA5MTIyMSZyZXF1ZXN0X2lkPTEyMzQ1NiZzb3VyY2Vfc3lzdGVtPWhpcyZvYmplY3Rfc3lzdGVtPWxpcyZhY3Rpb249cmVxdWVzdF9jYWxsJmNvZGU9bGlzNDE=</sign>
+		<request_id>123456</request_id>
+		<source_system>yypt</source_system>
+		<object_system>pacs</object_system>
+		<action>appoint_info_call</action>
+		<code>pacs_server</code>
+	</head>
+	<body>
+		<data>
+		</data>
+	</body>
+</reqxml>
+
+        ]]>
+</message>
+      </esb:callBussiness>
+   </soapenv:Body>
+</soapenv:Envelope>'}
+```
+
+#### 2.4.2.2 任务执行
+![desc](http://172.20.21.108:10087/hsbSub/img/3d636e93-d718-4048-a7cd-15d722703703.png)
+执行一次：立即执行一次任务
+![desc](http://172.20.21.108:10087/hsbSub/img/69eab834-aed7-4411-aa40-62124d9c3bfe.png)
+任务参数为这次执行时的参数，必填，参见新增任务中的任务参数说明。
+机器地址：为执行本次任务的引擎地址（如有多台引擎，可在指定地址的引擎执行），格式为：http://{ip}:{port}/
+如为空，则平台自动选择引擎执行。
+
+### 2.4.3 日志管理
+> 说明：查询执行日志，以及清理日志
+
+![desc](http://172.20.21.108:10087/hsbSub/img/fe3f7a52-411a-4c32-b637-ec7b10789695.png)
+
+# 3 数据字典管理
+> 维护平台中各系统的数据字典，配置字典代码及各系统间代码转换配置
+
+## 3.1 数据字典维护
+![desc](http://172.20.21.108:10087/hsbSub/img/0e36f22a-104e-42dd-abb6-7dec4c970285.png)
+
+### 3.1.1 新增字典
+选择接入系统，输入字典名称、字典标识，如有标准，输入标准代码和名称
+![desc](http://172.20.21.108:10087/hsbSub/img/6e98f099-aedf-430a-af06-cca156f0dc23.png)
+
+### 3.1.2 新增字典值
+选择指定定典，进行字段值的新增
+![desc](http://172.20.21.108:10087/hsbSub/img/58603c56-8831-4dbe-a420-dd775555021b.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/60781ba1-d1d9-40fa-9133-05c5a7ff848b.png)
+
+### 3.1.3 字典值调整
+对字典已有的字典值进行修改或删除。
+![desc](http://172.20.21.108:10087/hsbSub/img/309d4a55-c3a7-4a0d-9ea7-f4ff1158da1d.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/dff76cba-c53b-40d7-93e6-a07a3388709c.png)
+
+### 3.1.4 字典导入
+> 导入根据模板生成的xls文件，批量新增字典信息。
+
+### 3.1.5 模板下载
+> 下载字典导入xls模板
+
+### 3.1.6 模板上传
+> 上传字典导入xls模板，初始化时使用
+
+## 3.2 字典转换维护
+> 进行系统站字典值转换规则配置
+
+![desc](http://172.20.21.108:10087/hsbSub/img/c4f2558c-22aa-4db0-a441-485456cf4011.png)
+
+### 3.2.1 新增
+新增加转换规则
+![desc](http://172.20.21.108:10087/hsbSub/img/a4c9f490-21aa-46d8-bef5-2051e104ba54.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/5ae3d378-319d-472a-bfe2-c827a3be1851.png)
+![desc](http://172.20.21.108:10087/hsbSub/img/d9aa6e2a-dd25-42dc-9968-18e2045784d3.png)
+
+# 4 soap代理发布
+> 根据不同的服务需求，发布不同的格式的wsdl、请求和响应报文。
+
+## 4.1 soap发布配置
+- 配置流程：
+  ![desc](http://172.20.21.108:10087/hsbSub/img/c97e5dd2-a0ba-40c7-89b8-417dcc00681e.png)
+- 脚本和模板列表：
+
+  |序号|资源命名规范|中文名|用途|
+  |:-|:-|:-|:-|
+  |1|script_urlPatterns(/替换为_)|路径路径解析<br/>如/services/HSBsoap路径解析|路径解析脚本，返回模板名|
+  |2|pt_模板名_wsdl|XXXwsdl<br/>如：统一服务wsdl|wsdl文件|
+  |3|pt_模板名_req_xsd|XXX请求报校验|请求soap报文检验文件|
+  |4|pt_模板名_req|-|请求报文解析脚本|
+  |5|pt_模板名_tran|-|平台内部标准转发布服务返回数据|
+  |6|pt_模板名_resp|-|响应报文模板|
+
+### 4.1.1 路径解析脚本
+> 配置路径解析脚本，得到模板名
+
+根据WebServlet 实现类指定的urlPatterns 路径进行路径解析处理。
+![desc](http://172.20.21.108:10087/hsbSub/img/ce401064-a4c6-44a2-990d-5a16055f5faa.png)
+urlPatterns = "/services/esbsoap/";
+路径解析脚本为script_services_HSBsoap
+![desc](http://172.20.21.108:10087/hsbSub/img/bb196490-15fb-4b56-bfa1-b8a82b9f4211.png)
+
+- 脚本开发说明：
+  - 脚本中可使用的对象：
+    <table>
+     <tr>
+       <th>序号</th>
+       <th>对象名</th>
+       <th>对象类型</th>
+       <th>对象属性</th>
+       <th>对象说明</th>
+     </tr>
+     <tr>
+       <td>1</td>
+       <td rowspan="4">in</td>
+       <td rowspan="4">map</td>
+       <td>serverPath</td>
+       <td>服务路径名为urlPatterns与服务名之间的路径<br/>如:/engine/services/esbsoap/unservice/mdb_servic e,urlPatterns为/services/esbsoap/，serverPath为unservice</td>
+     </tr>
+     <tr>
+       <td>2</td>
+       <td>serverName</td>
+       <td>服务名，访问url最后路径名<br/> 如：/engine/services/esbsoap/unservice/mdb_service，serverName为mdb_servic</td>
+     </tr>
+     <tr>
+      <td>3</td>
+       <td>url</td>
+       <td>访问路径，不包括ip和端口号,/engine/services/esbsoap/unservice/mdb_service</td>
+     </tr>
+     <tr>
+      <td>3</td>
+       <td>urlPatterns</td>
+       <td>websevlet实现类的urlPatterns,不含*号,如/services/esbsoap/</td>
+     </tr>
+    </table>
+
+    <table>
+     <tr>
+       <th>序号</th>
+       <th>对象名</th>
+       <th>对象类型</th>
+       <th>对象属性</th>
+       <th>对象说明</th>
+     </tr>
+     <tr>
+       <td>1</td>
+       <td rowspan="2">out</td>
+       <td rowspan="2">map</td>
+       <td>templteName</td>
+       <td>模板名，用于wsdl,模板,脚本名,在脚本 中根据路径 和服务名进行设置，templteName相同的路径，wsdl及报文格式是一套</td>
+     </tr>
+     <tr>
+       <td>2</td>
+       <td>callFlag</td>
+       <td>允许调用标志，如果为-1表示当前访问路径不允许访问，向调用者返回 错误信息</td>
+     </tr>
+    </table>
+
+``` xml
+
+<!--out.callFlag 为"-1"时，按soap规范返回错误信息-->
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+   <soap:Body>
+      <soap:Fault>
+         <faultcode>soap:Server</faultcode>
+         <faultstring>/engine/services/esbsoap/unservice1/mdb_service无访问权限!</faultstring>
+      </soap:Fault>
+   </soap:Body>
+</soap:Envelope>
+```
+
+``` groovy
+
+//脚本示例
+out.templteName = "";
+out.callFlag = "-1";
+if (in.serverPath == "unservice") {
+  out.templteName = "unservice";
+  out.callFlag = "0";
+}
+```
+
+### 4.1.2 wsdl模板
+pt_模板名_wsdl，示例：pt_unservice_wsdl
+![desc](http://172.20.21.108:10087/hsbSub/img/09db0164-c573-4166-90ed-128a8d954e51.png)
+``` xml
+<!--示例：统一服务wsdl-->
+<!--访问示例：http://127.0.0.1:8080/engine/services/esbsoap/unservice/mdb_service?wsdl-->
+
+<?xml version='1.0' encoding='UTF-8'?><wsdl:definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="http://HSB.webservice" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:ns1="http://schemas.xmlsoap.org/soap/http" name="HSBWebService" targetNamespace="http://HSB.webservice">
+  <wsdl:types>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://HSB.webservice" elementFormDefault="unqualified" targetNamespace="http://HSB.webservice" version="1.0">
+<xs:element name="callBussiness" type="tns:callBussiness"/>
+<xs:element name="callBussinessResponse" type="tns:callBussinessResponse"/>
+<xs:complexType name="callBussiness">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="message" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+<xs:complexType name="callBussinessResponse">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="data" type="tns:soapResponse"/>
+    </xs:sequence>
+  </xs:complexType>
+<xs:complexType name="soapResponse">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="msg" type="xs:string"/>
+      <xs:element minOccurs="0" name="status_code" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>
+  </wsdl:types>
+  <wsdl:message name="callBussiness">
+    <wsdl:part element="tns:callBussiness" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="callBussinessResponse">
+    <wsdl:part element="tns:callBussinessResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:portType name="WebService">
+    <wsdl:operation name="callBussiness">
+      <wsdl:input message="tns:callBussiness" name="callBussiness">
+    </wsdl:input>
+      <wsdl:output message="tns:callBussinessResponse" name="callBussinessResponse">
+    </wsdl:output>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="HSBWebServiceSoapBinding" type="tns:WebService">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="callBussiness">
+      <soap:operation soapAction="" style="document"/>
+      <wsdl:input name="callBussiness">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="callBussinessResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="HSBWebService">
+    <wsdl:port binding="tns:HSBWebServiceSoapBinding" name="WebServicePort">
+      <soap:address location="http://localhost:8080/jcdsbws/proxy/lis_service"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
+```
+### 4.1.3 soap报文xsd检验脚本
+>对请求报文按wsdl的规范进行检验,检验脚本的详细见2.4.1.2、xsd。
+
+pt_模板名_req_xsd，如pt_unservice_req_xsd
+
+### 4.1.4 请求报文解析脚本
+> 将请求报文解析成平台内部服务所需要的map
+
+pt_模板名_req ,示例：pt_unservice_req
+- 脚本开发说明：
+  - 脚本中可使用的对象：
+        <table>
+     <tr>
+       <th>序号</th>
+       <th>对象名</th>
+       <th>对象类型</th>
+       <th>对象属性</th>
+       <th>对象说明</th>
+     </tr>
+     <tr>
+       <td>1</td>
+       <td rowspan="3">request</td>
+       <td rowspan="3">map</td>
+       <td>serviceName</td>
+       <td>服务名，访问url最后路径名 <br/>如：/engine/services/esbsoap/unservice/mdb_service，serverName为mdb_servic</td>
+     </tr>
+     <tr>
+       <td>2</td>
+       <td>body</td>
+       <td>字符串请求报文体,soap所有节点</td>
+     </tr>
+     <tr>
+       <td>3</td>
+       <td>header</td>
+       <td>客户端访问时的http header</td>
+     </tr>
+    </table>
+### 4.1.5 响应数据转换脚本
+> 平台内部标准转发布服务返回数据: pt_模板名_tran，如pt_esb_tran
+
+说明：
+1. respHeader.ContentType ,指定返回报文的格式和字符集，如text/xml;charset=UTF-8，text/json;charset=UTF-8,根据返回报文要求配置。
+2. data.outflag 为输入是否进行模板格式化，如为prox,则返回报文不进行模板格式，直接将data.orgdata的内容作为响应报文。
+
+``` groovy
+//代码示例：
+import java.lang.Integer;
+respHeader.ContentType="text/xml;charset=UTF-8"
+def code = result.code;
+def msg = result.msg;
+def sub_msg = result.sub_msg;
+def sub_code = result.sub_code;
+
+data.status_code = code;
+data.result_desc = msg;
+data.result_code = result.code;
+data.msg = msg;
+def code1 = code.asInt();
+println code1;
+if (code1 >=0) {
+  data.orgdata = result.biz_data;
+  data.outflag = "prox";
+}
+```
+
+### 4.1.6 响应报文模板
+> pt_模板名_resp---响应报文模板
+根据模板格式化响应报文，pt_模板名_resp，如:pt_esb_resp，对esb路径的响应报文进行格式化的模板，模板中的变量为pt_模板名_tran返回的data中的属性。
+
+``` xml
+<!--示例代码-->
+
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+   <soap:Body>
+      <ns2:callBussinessResponse xmlns:ns2="http://esb.webservice">
+         <data>
+            <status_code>${data.status_code}</status_code>
+            <msg>
+	            ${data.msg}
+          </msg>
+         </data>
+      </ns2:callBussinessResponse>
+   </soap:Body>
+</soap:Envelope>
+```
+
+### 4.1.7 soap代理测试
+#### 4.1.7.1 请求路径
+``` language
+http://127.0.0.1:8080/engine/services/esbsoap/esb/mock_server
+```
+#### 4.1.7.2 请求报文
+``` xml
+<soap:Envelope
+    xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <ns2:callBussiness
+            xmlns:ns2="http://HSB.webservice">
+            <message><![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<reqxml>
+    <head>
+        <version>1.0</version>
+        <timestamp>20220818113759</timestamp>
+        <sign>dmVyc2lvbj0xLjAmdGltZXN0YW1wPTIwMjIwODE4MTEzNzU5JnJlcXVlc3RfaWQ9OTM0OTUmc291cmNlX3N5c3RlbT1aU0omb2JqZWN0X3N5c3RlbT1oaXMjMDMmYWN0aW9uPXB1c2hTdGFmZk1lc3NhZ2U=</sign>
+        <request_id>93495</request_id>
+        <source_system>ZSJ</source_system>
+        <object_system>his#03</object_system>
+        <action>pushStaffMessage</action>
+        <access_key></access_key>
+        <code></code>
+    </head>
+    <body>
+        <data>
+            <request>
+                <modelTypeCode>50</modelTypeCode>
+                <pushModeId>002777_63616</pushModeId>
+                <content>
+                    <staffId>002777_63616</staffId>
+                    <hospId>41053</hospId>
+                    <hospName>太原市中心医院测试</hospName>
+                    <orgType>5</orgType>
+                    <staffName>张小三</staffName>
+                    <staffEnName/>
+                    <spell>ZXS</spell>
+                    <staffCode>CCC-AA01</staffCode>
+                    <staffNo>CCC-AA01</staffNo>
+                    <genderCode>1</genderCode>
+                    <genderDesc/>
+                    <brithday/>
+                    <nationCode/>
+                    <nationDesc/>
+                    <certificateType>1</certificateType>
+                    <certificateNo/>
+                    <cardNo/>
+                    <marriageCode>90</marriageCode>
+                    <marriageDesc/>
+                    <homeTown>340000,340200,340272</homeTown>
+                    <photoBase64> </photoBase64>
+                    <brithAddrProvice>340000</brithAddrProvice>
+                    <brithAddrCity>安徽省</brithAddrCity>
+                    <brithAddrCounty/>
+                    <brithAddrTownship/>
+                    <brithAddrVillage/>
+                    <brithAddrHouseNum>xxxx</brithAddrHouseNum>
+                    <liveAddrProvice>310000,310100,310118,310118003</liveAddrProvice>
+                    <liveAddrCity>上海市/市辖区/青浦区/香花桥街道</liveAddrCity>
+                    <liveAddrCounty/>
+                    <liveAddrTownship/>
+                    <liveAddrVillage/>
+                    <liveAddrHouseNum>xxxxx</liveAddrHouseNum>
+                    <phone>1390000</phone>
+                    <officePhone>1390000</officePhone>
+                    <postCode>140000</postCode>
+                    <email/>
+                    <kindCode>11</kindCode>
+                    <educationCode>31</educationCode>
+                    <educationDesc/>
+                    <degreeCode>4</degreeCode>
+                    <degreeDesc/>
+                    <professionalCode>80</professionalCode>
+                    <professionalDesc/>
+                    <postionTypeCode/>
+                    <postionTypeDesc/>
+                    <positionCode>235</positionCode>
+                    <positionDesc/>
+                    <healthStatusCode>1</healthStatusCode>
+                    <healthStatusDesc/>
+                    <managerPosition>07</managerPosition>
+                    <cftitle>6</cftitle>
+                    <workDate>2020-08-14</workDate>
+                    <drcDate>2022-08-10</drcDate>
+                    <profile/>
+                    <stationed>02</stationed>
+                    <academician>02</academician>
+                    <expert>02</expert>
+                    <allowance>02</allowance>
+                    <nationPeople>02</nationPeople>
+                    <technologyHeadPeople>02</technologyHeadPeople>
+                    <responder>02</responder>
+                    <phyPrcaticeTypeCode>1</phyPrcaticeTypeCode>
+                    <phyPrcaticeTypeDesc/>
+                    <phyPrcaticeScopeCode>A13</phyPrcaticeScopeCode>
+                    <phyPrcaticeScopeDesc/>
+                    <phyQualifiedName>dasw</phyQualifiedName>
+                    <phyQualifiedCertifiedNo>11112</phyQualifiedCertifiedNo>
+                    <phyPracticeCertificateNo>12211</phyPracticeCertificateNo>
+                    <phyRegisterDate>2022-08-03</phyRegisterDate>
+                    <phyRegisterValidDate>2022-08-10</phyRegisterValidDate>
+                    <phyRegisterAddress>生产</phyRegisterAddress>
+                    <psyDrugAuth>10</psyDrugAuth>
+                    <formation>4</formation>
+                    <medicalTitle/>
+                    <medicalId/>
+                    <ssLevel>5</ssLevel>
+                    <antibioticLevelCode>2</antibioticLevelCode>
+                    <antibioticLevelDesc/>
+                    <moreHospPhy>02</moreHospPhy>
+                    <phaPracticeCertificateCode>dadas1111</phaPracticeCertificateCode>
+                    <phaPrcaticeTypeCode>03</phaPrcaticeTypeCode>
+                    <phaPrcaticeTypeDesc/>
+                    <phaPrcaticeScopeCode>01</phaPrcaticeScopeCode>
+                    <phaPrcaticeScopeDesc/>
+                    <phaRegisterDate>2022-08-02</phaRegisterDate>
+                    <phaRegisterValidDate>2022-08-30</phaRegisterValidDate>
+                    <phaRegisterAddress/>
+                    <hocusAuth>02</hocusAuth>
+                    <phaCertifiedNo/>
+                    <expJobLevelCode/>
+                    <expJobLevelDesc/>
+                    <expGoodArea/>
+                    <account>CCC-AA01</account>
+                    <locked>0</locked>
+                    <remark>ddddd</remark>
+                    <createBy>1</createBy>
+                    <createTime>2022-08-18 09:33:42</createTime>
+                    <modifyBy>1</modifyBy>
+                    <modifyTime>2022-08-18 09:33:42</modifyTime>
+                    <orderNum>0</orderNum>
+                    <effective>1</effective>
+                    <createByName>超级管理员</createByName>
+                    <modifyByName>超级管理员</modifyByName>
+                    <politicalStatus>2</politicalStatus>
+                    <joinpartisanDate>2021-08-06</joinpartisanDate>
+                    <proQualiCertificate/>
+                    <entryDate>2020-02-07</entryDate>
+                    <jobCategory/>
+                    <whetherContract>02</whetherContract>
+                    <internship>02</internship>
+                    <wb>XID</wb>
+                    <homeTownDesc>安徽省/芜湖市/安徽芜湖长江大桥经济开发区</homeTownDesc>
+                    <pwdplaintext/>
+                    <openid/>
+                    <businessDeptList>
+                        <businessDeptData>
+                            <orgId>002777_63594</orgId>
+                            <orgCode>csnk111</orgCode>
+                            <orgType>8</orgType>
+                            <orgName>内科-测试</orgName>
+                        </businessDeptData>
+                    </businessDeptList>
+                </content>
+            </request>
+        </data>
+    </body>
+</reqxml>]]>
+            </message>
+        </ns2:callBussiness>
+    </soap:Body>
+</soap:Envelope>
+```
+
+# 5 如何用Groovy脚本操作Redis缓存
+## 5.1 配置缓存信息
+![desc](http://172.20.21.108:10087/hsbSub/img/861d3c31-611a-4a4b-b3df-bcedc7fe5581.png)
+**<font color='red'>特别说明：对缓存配置的更新和删除操作都会使得该缓存的原有的数据被清空请谨慎操作。</font>**
+
+## 5.2 在groovy脚本中的使用
+> 在了解如何使用工具类之前得先了解缓存在程序中的结构，具体示意图如下：
+![desc](http://172.20.21.108:10087/hsbSub/img/69b2d958-bd4b-4662-a46d-818a9e04a712.png)
+上图中的缓存一，缓存二，缓存三就对应5.1配置中的缓存英文名配置项，如果在调用方法时传入了没有配置的缓存名称时方法会统一返回一个IllegalArgumentException错误内容为："未查询到名为cacheName的缓存配置，请到资源管理界面检查相关缓存是否正确配置"，导致该异常的原因可能是因为没有在5.1步骤配置也可能因为配置信息有问题（例如engine无法连接到redis，账号密码配置错误，redis程序未启动等）
+
+- 工具类以及方法的介绍:
+- 工具类：com.yinhai.engine.med.cache.HsbCacheUtils
+- 方法参数说明：
+cacheName: 缓存名称，固定字符串类型
+key：缓存下键值对的键，固定字符串类型
+value：缓存下键值对的值，所有实现了序列化接口的对象
+ttl：缓存存活时长单位为秒
+- 方法：
+  ``` java
+  //通过缓存名称和键值对中的键来获取对应的值
+  com.yinhai.engine.med.cache.HsbCacheUtils#getValue (String cacheName, String key)
+  //设置有过期时间的键值对，时间单位为秒
+  com.yinhai.engine.med.cache.HsbCacheUtils#setWithExpire(String cacheName, String key, Serializable value, Long ttlSeconds)
+  //设置永不过期的键值对
+  com.yinhai.engine.med.cache.HsbCacheUtils#setWithoutExpire(String cacheName, String key, Serializable value)
+  //删除指定键值对
+  com.yinhai.engine.med.cache.HsbCacheUtils#deleteByKey(String cacheName, String key)
+  //清空指定cache但不删除
+  com.yinhai.engine.med.cache.HsbCacheUtils#clearCacheByCacheName(String cacheName)
+  ```
+## 5.3	示例脚本
+![desc](http://172.20.21.108:10087/hsbSub/img/694c4e72-601b-48b1-93d2-6095e1097044.png)
+
+# 6 如何使用厂商服务验证功能
+## 6.1 功能描述以及位置
+> 描述：在项目初期为了验证三方给出的服务是否按照平台文档上的标准发布就可以使用该功能，如果验证通过则表示没问题反之则需要三方厂商进行响应调整。
+位置：
+![desc](http://172.20.21.108:10087/hsbSub/img/b5fb0b14-b986-44da-b200-32c7f768098f.png)
+
+## 6.2 如何使用
+1. 在标号1 的位置输入三方厂商给出的服务的wsdl地址
+2. 在标号2处选择需要校验的服务（总线接口服务就是指普通的接口例如检验检查申请单，总线主数据接口指科室人员推送等接口，这类接口的响应数据和总线服务接口不一样）
+3. 点击标号3处的生成请求模板按钮后会在标号4处生成一个请求三方服务的模板
+4. 点击标号5验证按钮会显示验证通过或者失败，如果失败则表示服务不符合平台标准
+5.  点击标号6会向三方服务发送请求，如果有响应会显示在标号7中
+6. 点击标号8验证按钮，如果成功则表示三方厂商的响应符合平台标准如果失败则不符合
+![desc](http://172.20.21.108:10087/hsbSub/img/9f36bfdf-ec8a-4335-b71a-7938469b06ba.png)
+
+下图中的soap请求标准模板和soap响应标准模板为总线程序给出的一个示例
+![desc](http://172.20.21.108:10087/hsbSub/img/6569dcf1-0dd6-46e9-bb0d-9052d4ded700.png)
+
+
+
+
+
+
+
+
+
+<h2 data-v-md-heading="center-font-size-5-color-0078d7-hsb-操-作-手-册-font-center" data-v-md-line="1"><strong><center><font size="5" color="#0078d7">HSB 操 作 手 册</font></center></strong></h2>
+<blockquote data-v-md-line="3">
+<p data-v-md-line="3">为了让使用者可以更快速，方便且全面的了解集成平台是如何使用的，以及都包含了哪些内容，故提供此文档供大家参考</p>
+</blockquote>
+<h1 data-v-md-heading="_1-接入管理" data-v-md-line="5">1 接入管理</h1>
+<blockquote data-v-md-line="6">
+<p data-v-md-line="6">所有和平台进行交互的子系统都需要先在此进行“新增系统”操作，以便使用者进行查询，编辑，删除及管理（启用，停用，授权等），某个系统都被哪些服务注册使用了也可在此查询。</p>
+</blockquote>
+<h2 data-v-md-heading="_1-1-新增接入系统" data-v-md-line="7">1.1 新增接入系统</h2>
+<p data-v-md-line="8"><img src="http://172.20.21.108:10087/hsbSub/img/9a65e5de-8d99-4eba-93f5-3a7236a4e4c7.png" alt="desc"></p>
+<div data-v-md-line="9"><center>主界面</center>
+</div><h3 data-v-md-heading="_1-1-1-系统配置" data-v-md-line="11">1.1.1 系统配置</h3>
+<p data-v-md-line="12">点击接入管理----接入系统管理------新增—出现以下界面<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/1f057825-cc50-434f-82b1-1941dccdbc66.png" alt="desc"></p>
+<ul data-v-md-line="14">
+<li>系统标识：根据接口文档名称命名，例如：医院信息平台数据交换总线-血透系统数据交互接口文档.doc–此处能填hemoClient</li>
+<li>系统名称：同上，有中文名称写XXX系统，没有则写英文+系统，如：血透系统</li>
+<li>系统类型：WEB端</li>
+<li>应用类型：普调应用</li>
+<li>应用角色：服务提供者和消费者</li>
+<li>验证类型：RSA签名验证</li>
+<li>验证签名：不勾选</li>
+<li>其他选项有则默认选项，没有则不填，之后点击保存，出现成功标识即可。</li>
+</ul>
+<p data-v-md-line="23">注：根据接口文档中的事件列表中的提供系统和消费系统，有几个不一样的系统需要注册几个，如果系统已经注册则不需要重新注册，例如：医院信息平台数据交换总线-血透系统数据交互接口文档.doc中此处有3个不同的系统，分别为HIS系统，HEMO系统,HIIP系统：但是HIS系统之前已经注册过就不用管了，只需注册其他两个即可。</p>
+<h1 data-v-md-heading="_2-服务管理" data-v-md-line="25">2 服务管理</h1>
+<blockquote data-v-md-line="26">
+<p data-v-md-line="26">任何客户端及第三方等想使用平台进行交互，都必须要在平台上先进行注册服务，之后每个服务都可以作为生产者和消费者来生产和消费信息，通过集成平台来实现信息的交互。<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/2093e0cb-e4bb-4c6b-af05-03d6a57bb960.png" alt="desc"></p>
+</blockquote>
+<div data-v-md-line="28"><center>主界面</center>
+</div><h2 data-v-md-heading="_2-1-服务注册" data-v-md-line="30">2.1 服务注册</h2>
+<p data-v-md-line="31">注册soap或Rabbitmq服务等，供之后服务流程编排使用。</p>
+<h3 data-v-md-heading="_2-1-1-soap服务注册" data-v-md-line="32">2.1.1 Soap服务注册</h3>
+<h4 data-v-md-heading="_2-1-1-1-服务配置" data-v-md-line="33">2.1.1.1 服务配置</h4>
+<p data-v-md-line="34">点击服务管理—服务注册管理—服务注册—soap出现以下界面<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/cffdcc05-7f65-42fe-bb91-915ce3221a8c.png" alt="desc"></p>
+<ul data-v-md-line="36">
+<li>服务名称：事件列表中所列的消费系统和提供系统（见接口文档，如果已经存在不需要重建）</li>
+<li>命名方式：以血透系统为例，应为hemo+Client=hemoClient</li>
+<li>服务提供者：选择相对应的系统即可</li>
+<li>所处网络区域：内网区</li>
+<li>WSDL地址：自定义，规范为：http://本地路径:端口号/自定义标识?wsdl<br>
+例：http://192.168.100.168:8055/m?wsdl</li>
+<li>名称空间：webservice的targetNamespace<br>
+例：http://HSB.webservice</li>
+<li>验证方式：不验证</li>
+<li>请求报文模板：soap请求报文模板</li>
+<li>响应解析脚本：soap解析模板</li>
+<li>入参格式：XML</li>
+<li>出参格式：XML</li>
+<li>其他选项有则默认选项，没有则不填，之后点击保存，出现成功标识即可。</li>
+</ul>
+<p data-v-md-line="51">注：根据接口文档中的事件列表中的提供系统和消费系统，有几个不一样的系统需要注册几个，如果系统已经注册则不需要重新注册，例如：医院信息平台数据交换总线-血透系统数据交互接口文档.doc中此处有3个不同的系统，分别为HIS系统，HEMO系		     统,HIIP系统：但是HIS系统之前已经注册过就不用管了，只需注册其他两个即可。</p>
+<h3 data-v-md-heading="_2-1-2-交换机服务注册-rabbitmq服务" data-v-md-line="53">2.1.2 交换机服务注册（RabbitMQ服务）</h3>
+<h4 data-v-md-heading="_2-1-2-1-服务配置" data-v-md-line="54">2.1.2.1 服务配置</h4>
+<p data-v-md-line="55">点击服务管理—服务注册管理—服务注册—RabbitMQ出现以下界面<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/72e52714-ab6e-4a4e-8aa3-caee84f6b027.png" alt="desc"></p>
+<ul data-v-md-line="57">
+<li>服务名称：自定义</li>
+<li>服务提供者：HSB</li>
+<li>服务协议：RabbitMQ</li>
+<li>所处网络区域：内网区</li>
+<li>addresses：地址</li>
+<li>vhost：</li>
+<li>连接超时（ms）：500</li>
+<li>用户名称：名</li>
+<li>用户密码：密码</li>
+<li>入参格式：XML</li>
+<li>出参格式：XML</li>
+</ul>
+<h2 data-v-md-heading="_2-2-服务发布" data-v-md-line="68">2.2 服务发布</h2>
+<blockquote data-v-md-line="69">
+<p data-v-md-line="69">对外发布服务，并提供服务调用。支持原子发布、组装发布。</p>
+</blockquote>
+<h3 data-v-md-heading="_2-2-1-原子服务" data-v-md-line="70">2.2.1 原子服务</h3>
+<blockquote data-v-md-line="71">
+<p data-v-md-line="71">将第三方注册的单个接口在HSB上进行发布，供客户端进行调用。相当于客户端请求HSB，HSB将请求转发给第三方。</p>
+</blockquote>
+<h4 data-v-md-heading="_2-2-1-1-新增原子服务" data-v-md-line="72">2.2.1.1 新增原子服务</h4>
+<p data-v-md-line="73"><img src="http://172.20.21.108:10087/hsbSub/img/1b38100a-cd04-4269-873a-3b7258359c89.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-2-1-1-1-服务配置" data-v-md-line="74">2.2.1.1.1 服务配置</h5>
+<ul data-v-md-line="75">
+<li>服务标识：服务唯一标识名，全局唯一。</li>
+<li>服务名称：服务名称<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/910ddd49-b21e-4460-8654-67c4b8e5b88a.png" alt="desc"></li>
+</ul>
+<h5 data-v-md-heading="_2-2-1-1-2-发布服务" data-v-md-line="78">2.2.1.1.2 发布服务</h5>
+<ol data-v-md-line="79">
+<li>选择注册的服务（注册服务请查看xxx）</li>
+<li>如需冲正服务，可以点击下一步选择冲正服务。</li>
+<li>点击发布<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/c0d18072-a60d-461a-8a03-994e46e6c217.png" alt="desc"></li>
+</ol>
+<h5 data-v-md-heading="_2-2-1-1-3-测试" data-v-md-line="83">2.2.1.1.3 测试</h5>
+<div data-v-md-line="85"><table>
+  <tr>
+    <td>请求方式</td> 
+    <td colspan="3">http</td> 
+  </tr>
+  <tr>
+    <td>请求数据格式</td> 
+    <td colspan="3">表单</td> 
+  </tr>
+  <tr>
+    <td>请求参数</td> 
+    <td colspan="3"></td> 
+  </tr>
+  <tr>
+    <td>参数</td> 
+    <td>参数说明</td> 
+    <td>是否必填</td> 
+    <td>备注</td> 
+  </tr>
+  <tr>
+    <td>access_key</td> 
+    <td>接入系统标识</td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>format</td> 
+    <td>返回数据格式json/xml</td> 
+    <td>否</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>request_id</td> 
+    <td>请求唯一编码(流水号)</td> 
+    <td>否</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>version</td> 
+    <td>版本号</td> 
+    <td>否</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>sign</td> 
+    <td>参数签名</td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>timestamp</td> 
+    <td>发送请求的时间(毫秒)</td> 
+    <td>否</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>biz_content</td> 
+    <td>业务参数</td> 
+    <td>是</td> 
+    <td>根据真实服务的入参类型来修改，包括:对象、数组、布尔值、 列表、数字、字符串、XML)</td> 
+  </tr>
+</table>
+</div><div data-v-md-line="148"><table>
+  <tr>
+    <td>响应参数</td> 
+    <td colspan="3"></td> 
+  </tr>
+  <tr>
+    <td>参数</td> 
+    <td>参数说明</td> 
+    <td>是否必返</td> 
+    <td>备注</td> 
+  </tr>
+  <tr>
+    <td>code</td> 
+    <td>返回code</td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>msg</td> 
+    <td>返回描述</td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>sub_code</td> 
+    <td></td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>sub_msg</td> 
+    <td></td> 
+    <td>是</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>biz_data</td> 
+    <td>业务数据</td> 
+    <td>是</td> 
+    <td>HSB调用第三方服务返回的响应数据</td> 
+  </tr>
+</table>
+</div><p data-v-md-line="191"><img src="http://172.20.21.108:10087/hsbSub/img/8a57dcd1-a3fe-4d12-9e96-8bff4eaefc08.png" alt="desc"></p>
+<h3 data-v-md-heading="_2-2-2-组装服务" data-v-md-line="193">2.2.2 组装服务</h3>
+<blockquote data-v-md-line="194">
+<p data-v-md-line="194">在现有的一个或者多个服务进行组装、编排，增加额外的处理逻辑，使其具备更完善的业务功能。</p>
+</blockquote>
+<h4 data-v-md-heading="_2-2-2-1-新增组装服务" data-v-md-line="195">2.2.2.1 新增组装服务</h4>
+<p data-v-md-line="196"><img src="http://172.20.21.108:10087/hsbSub/img/dc53b48b-d842-4211-bd28-d2dc7471362d.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-2-2-1-1-服务配置" data-v-md-line="197">2.2.2.1.1 服务配置</h5>
+<p data-v-md-line="198"><img src="http://172.20.21.108:10087/hsbSub/img/e37d8fba-21a6-497b-9692-dd953c4b3c89.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-2-2-1-2-添加服务" data-v-md-line="199">2.2.2.1.2 添加服务</h5>
+<p data-v-md-line="200">选择需要组合的服务(包括已注册的服务，已发布的服务)，并点击 添加到已选， 点击 下一步 进入到编排界面<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/1b07eba5-a112-4579-b891-06b8c0109545.png" alt="desc"><br>
+被选中的服务将会在编排界面的左侧。<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/4b91a344-8eaf-457c-98ba-4c4ced6f198f.png" alt="desc"></p>
+<h4 data-v-md-heading="_2-2-2-2-服务编排" data-v-md-line="204">2.2.2.2 服务编排</h4>
+<blockquote data-v-md-line="205">
+<p data-v-md-line="205">在开始服务编排之前将会对常用编排组件做详细介绍，为后续服务编排做准备。</p>
+</blockquote>
+<h5 data-v-md-heading="_2-2-2-2-1-编排流程" data-v-md-line="206">2.2.2.2.1 编排流程</h5>
+<blockquote data-v-md-line="207">
+<p data-v-md-line="207">为了让读者能快速理解服务编排，并快速上手。下面以院内的实际业务作为例子进行讲解，让读者能够全面的了解。院内的服务怎么从注册到HSB后，根据具体实际业务进行编排组合，使其具备实际业务功能供外部调用。</p>
+</blockquote>
+<p data-v-md-line="209">下面以《血透管理系统数据交互接口》接口文档为例，将血透系统提供的接口注册到HSB,并暴露一个统一的服务接口供外部调用，编排完的服务如下图所示<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/dea0d8bf-12f2-444f-99d8-5bcc265ae067.png" alt="desc"><br>
+整个的处理流程如下图所示：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/76f59f9e-16b4-4e54-84e5-89ece3b564f1.png" alt="desc"><br>
+下面将详细的介绍每一个步骤。</p>
+<h5 data-v-md-heading="_2-2-2-2-2-请求验证" data-v-md-line="214">2.2.2.2.2 请求验证</h5>
+<p data-v-md-line="215">为了验证请求合法性，需要对请求中一些参数做一些校验。在本例的业务场景中，将请求报文中的/reqxml/head节点下的version、code、timestamp、request_id、source_system、object_system、action做参数拼接并与sign做base64解码后的值做对比，如果值一致则验证通过。可以在界面直接查看校验逻辑的groovy脚本<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/5be4eeba-67b5-41ae-aeb0-5ace94ed239f.png" alt="desc"><br>
+<strong><font color="red">注意：此处的请求校验是本业务的校验逻辑，根据具体业务而定，而并非HSB系统的请求校验。</strong></font></p>
+<h5 data-v-md-heading="_2-2-2-2-3-请求分发" data-v-md-line="218">2.2.2.2.3 请求分发</h5>
+<blockquote data-v-md-line="219">
+<p data-v-md-line="219">请求分发相当于路由功能，根据不同的业务参数执行不同的业务逻辑。在本例中，根据报文中的/reqxml/head/action节点数据作为路由键。使用 <strong><font color="red">条件路由组件</font></strong> ，在不同的分支路径上使用xpath表达式。</p>
+</blockquote>
+<h5 data-v-md-heading="_2-2-2-2-4-异步调用" data-v-md-line="220">2.2.2.2.4 异步调用</h5>
+<blockquote data-v-md-line="221">
+<p data-v-md-line="221">为了提高HSB系统的吞吐量和对客户端请求的响应速度，在本服务编排中使用的 <strong>rabbitmq消息队列组件(此组件使用参考 服务资源管理-消息队列)</strong> ，将请求存入到消息队列中，然后异步处理消息队列中的业务请求逻辑。<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/95903b29-21d9-48c9-86a8-200515441394.png" alt="desc"><br>
+如下图所示，请求消息往如下三个队列中存放，再发布一个服务消费如下队列中的消息便是异步处理请求了。<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/0410c97e-111a-4a4b-92a6-9e6518ea8b2c.png" alt="desc"></p>
+</blockquote>
+<h5 data-v-md-heading="_2-2-2-2-5-异步响应" data-v-md-line="225">2.2.2.2.5 异步响应</h5>
+<p data-v-md-line="226">可以通过groovy脚本对客户端调用进行响应。<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/d2878094-c2c9-4c61-8ae9-2453c72fc5d2.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/c37f6840-1b7e-47ca-80f3-3bc2bfc71d59.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-2-2-2-6-异常处理" data-v-md-line="229">2.2.2.2.6 异常处理</h5>
+<h4 data-v-md-heading="_2-2-2-3-编排组件" data-v-md-line="230">2.2.2.3 编排组件</h4>
+<h5 data-v-md-heading="_2-2-2-3-1-写库组件" data-v-md-line="231">2.2.2.3.1 写库组件</h5>
+<blockquote data-v-md-line="232">
+<p data-v-md-line="232">对于一些需要写入数据库的操作可以使用通用写库组件，sql语句输入执行的sql，参数设置则对sql中的参数进行赋值。</p>
+</blockquote>
+<p data-v-md-line="234"><img src="http://172.20.21.108:10087/hsbSub/img/aa68aabb-9eeb-4457-a329-68b266281999.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/20414cbd-91b6-47be-8495-a8a29560cd3a.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-2-2-3-2-cdr数据处理" data-v-md-line="236">2.2.2.3.2 cdr数据处理</h5>
+<p data-v-md-line="237"><img src="http://172.20.21.108:10087/hsbSub/img/9e5f3e42-a64b-4179-a63a-3145dff8b400.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-2-2-3-3-第三方服务调用" data-v-md-line="238">2.2.2.3.3 第三方服务调用</h5>
+<p data-v-md-line="239"><img src="http://172.20.21.108:10087/hsbSub/img/52b8cd0b-9637-44a3-a12e-926926b00810.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-2-2-3-4-hsb消息日志" data-v-md-line="240">2.2.2.3.4 HSB消息日志</h5>
+<p data-v-md-line="241"><img src="http://172.20.21.108:10087/hsbSub/img/affecfee-7a5f-46ee-88ee-5dfd19fe9b93.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-2-2-3-5-消息日志处理" data-v-md-line="242">2.2.2.3.5 消息日志处理</h5>
+<p data-v-md-line="243">消息日志需要写入三张表</p>
+<ul data-v-md-line="244">
+<li>pt_HSB_message_log 请求报文日志表(记录每次请求的请求报文，每次调用只记录一次)</li>
+<li>pt_HSB_process_log 流程处理日志(记录每个流程的处理日志)</li>
+<li>pt_HSB_error_log 错误日志(每个流程的错误日志)<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/58267d9e-6de5-4fd3-9a8b-8db63fafda13.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/e9ac37b4-e816-4138-a115-9cbd8c3eed2f.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/85df2dde-6f55-4e1f-b496-9ff6e87d6a49.png" alt="desc"></li>
+</ul>
+<h5 data-v-md-heading="_2-2-2-3-6-主数据分发器" data-v-md-line="250">2.2.2.3.6 主数据分发器</h5>
+<ul data-v-md-line="251">
+<li>
+<p data-v-md-line="251">使用场景：用于主数据服务调用多个第三方服务的情况，主数据分发器将调用平台的服务，按分发规则，调用多个第三方服务</p>
+</li>
+<li>
+<p data-v-md-line="252">组件操作：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/811a2834-59af-4435-9db2-b272ee64ecf4.png" alt="desc"></p>
+</li>
+<li>
+<p data-v-md-line="254">配置参数说明：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/3c24ed9b-6ed3-4d92-aba9-06b63e37715d.png" alt="desc"></p>
+</li>
+<li>
+<p data-v-md-line="256">拆分节点、分隔符：分发器根据拆分节点指定的节点名或字段名内容，按分隔符进行分割，示例<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/f75ee270-2ea9-4245-b5ce-5611372ed4ac.png" alt="desc"><br>
+&lt;object_system&gt;HIS@123456,LIS@123456&lt;/object_system&gt;<br>
+分离处理为两个报文：<br>
+&lt;object_system&gt;HIS@123456&lt;/object_system&gt;<br>
+&lt;object_system&gt;LIS@123456&lt;/object_system&gt;</p>
+</li>
+<li>
+<p data-v-md-line="263">主数据处理服务：对分离后报文处理的平台已发布的服务<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/b39bb6c4-623c-4747-9c94-a5c7c2491729.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/2156b797-6ce1-482f-b77e-dcfeaf99e47a.png" alt="desc"></p>
+</li>
+<li>
+<p data-v-md-line="267">第三方url参数:分离后报文调用第三方服务的url地址<br>
+名称1=url地址1,名称2=url地址2,…<br>
+eg:HIS@123456=http://127.0.0.1:8080/engine/services/HSBwebservice/mdb_demo_pushHosp,LIS@123456=http://127.0.0.1:8080/engine/services/HSBwebservice/mdb_demo_pushHosp1<br>
+参数里的名称，与拆分节点拆分后的名称一致，如拆分节点值拆分后在第三方url参数配置中没有，平台不能调用这个分离名称。</p>
+</li>
+<li>
+<p data-v-md-line="271">动态调用第三方服务：<br>
+根据主数据分发器分发url执行第三方调用，在服务注册管理中，注册soap协议服务<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/a201af8d-2878-48b2-9cee-356919b83baf.png" alt="desc"><br>
+动态调用，将wsdl地址的ip设置为0.0.0.0。</p>
+</li>
+<li>
+<p data-v-md-line="275">主数据服务配置流程：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/6b31492c-81cd-4c2b-99ff-a1112d117a40.png" alt="desc"></p>
+</li>
+</ul>
+<h5 data-v-md-heading="_2-2-2-3-7-xml报文分发器" data-v-md-line="277">2.2.2.3.7 xml报文分发器</h5>
+<ul data-v-md-line="278">
+<li>使用场景：<br>
+用于xml报文服务调用分发为多个报文体服务的情况，xml报文分发器将调用平台的服务，按分发规则，分发为多个服务体服务。</li>
+<li>组件操作：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/84e8a397-df17-4f9c-a0d7-d2395406b04b.png" alt="desc"></li>
+<li>配置参数说明：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/98bd0af4-3420-4e70-95f0-f1c334662ec0.png" alt="desc"></li>
+<li>分发节点名：<br>
+xml报文分发器根据指定的分发节点名，进行分割，示例<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/e3064923-c170-4777-99ea-71bd13ad1e8a.png" alt="desc"><br>
+分离处理为两个报文：</li>
+</ul>
+<div data-v-md-line="288"><div class="v-md-pre-wrapper v-md-pre-wrapper-xml extra-class"><pre class="v-md-hljs-xml"><code><span class="hljs-tag">&lt;<span class="hljs-name">data</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">request_details</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">detail</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">org_code</span>&gt;</span>1<span class="hljs-tag">&lt;/<span class="hljs-name">org_code</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">detail</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">request_details</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">data</span>&gt;</span>
+--------------------------------------------------------------------------------------------------
+<span class="hljs-tag">&lt;<span class="hljs-name">data</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">request_details</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">detail</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">org_code</span>&gt;</span>123<span class="hljs-tag">&lt;/<span class="hljs-name">org_code</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">detail</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">request_details</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">data</span>&gt;</span>
+</code></pre>
+</div></div><ul data-v-md-line="305">
+<li>处理服务标识：对报文分发后调用平台已发布的服务<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/69811b28-cb25-4475-916a-d18194b94cfd.png" alt="desc"></li>
+</ul>
+<h2 data-v-md-heading="_2-3-服务治理" data-v-md-line="307">2.3 服务治理</h2>
+<h3 data-v-md-heading="_2-3-1-错误日志" data-v-md-line="308">2.3.1 错误日志</h3>
+<blockquote data-v-md-line="309">
+<p data-v-md-line="309">作用：当项目启动加载服务时，记录服务运行成功还是运行失败，并能够从服务治理-错误日志中查看<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/ac873f97-9158-4f36-a04f-3c8e5584f5ef.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/35f9b2b4-19cf-480c-a126-20ac0f2229b0.png" alt="desc"></p>
+</blockquote>
+<h3 data-v-md-heading="_2-3-2-服务资源管理" data-v-md-line="312">2.3.2 服务资源管理</h3>
+<h4 data-v-md-heading="_2-3-2-1-数据校验" data-v-md-line="313">2.3.2.1 数据校验</h4>
+<h5 data-v-md-heading="_2-3-2-1-1-jsonschema" data-v-md-line="314">2.3.2.1.1 jsonschema</h5>
+<ul data-v-md-line="315">
+<li>作用：jsonschema可以注释和验证json文档。资料链接：https://json-schema.org/</li>
+<li>新增：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/266da872-bbdb-4f17-811f-2bc52dc747bc.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/ac039f0a-8869-485a-8c0e-207d1266cfc7.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/97406bdf-6277-410b-92a3-dcc54ddbdead.png" alt="desc"></li>
+<li>名称/英文名称:jsonschema的资源名称，名称可重复，所有资源的英文名称都不可重复。</li>
+<li>所属目录：资源存放的路径</li>
+<li>编辑/下载/停用：<img src="http://172.20.21.108:10087/hsbSub/img/ab1ce44e-a0ca-41a7-a545-a147438dc28a.png" alt="desc"></li>
+<li>导入/导出：<img src="http://172.20.21.108:10087/hsbSub/img/3b834a59-f408-47c5-8112-6a98fe30520f.png" alt="desc"></li>
+<li>测试：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/a8dce096-7f11-4baf-a444-f06bb8443fef.png" alt="desc"><br>
+点击测试按钮，会检查JSON文本内容符不符合JSONSCHEMA内容。</li>
+<li>生成： <img src="http://172.20.21.108:10087/hsbSub/img/8be938c1-072a-402f-ba2a-e04f50b3634e.png" alt="desc"><br>
+点击生成按钮，可以生成JSONSCHEMA内容。</li>
+<li>测试操作：<img src="http://172.20.21.108:10087/hsbSub/img/1d0c5680-b928-4923-b722-a8aefb6b4053.png" alt="desc"><br>
+点击测试按钮，会校验JSON文本内容符不符合JSONSCHEMA规定。<br>
+-jsonschema测试数据:</li>
+</ul>
+<div data-v-md-line="332"><div class="v-md-pre-wrapper v-md-pre-wrapper-json extra-class"><pre class="v-md-hljs-json"><code>jsonschema：
+{
+  &quot;properties&quot;: {
+    &quot;name&quot;: {
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;address&quot;: {
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;age&quot;: {
+      &quot;type&quot;: &quot;integer&quot;
+    }
+  },
+  &quot;title&quot;: &quot;一个对象&quot;,
+  &quot;type&quot;: &quot;object&quot;
+}
+
+json:
+{
+  &quot;name&quot;: &quot;name&quot;,
+  &quot;address&quot;: &quot;dfdfdf&quot;,
+  &quot;age&quot;:12
+}
+</code></pre>
+</div></div><h5 data-v-md-heading="_2-3-2-1-2-xsd" data-v-md-line="358">2.3.2.1.2 xsd</h5>
+<blockquote data-v-md-line="359">
+<p data-v-md-line="359">作用：当服务被调用时，需要对服务调用方传过来的参数做校验，XSD就是一种校验方式。</p>
+</blockquote>
+<ul data-v-md-line="360">
+<li>新增：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/dbbf070a-2348-4664-aa08-e890e8493dca.png" alt="desc"></li>
+<li>名称/英文名称:xsd的资源名称，名称可重复，所有资源的英文名称都不可重复。</li>
+<li>所属目录：资源存放的路径</li>
+<li>编辑/下载/停用：<img src="http://172.20.21.108:10087/hsbSub/img/014aba03-5550-41df-bc03-2b7ddd4475e8.png" alt="desc"></li>
+<li>测试：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/5dc958e6-8d47-43ec-a7b7-a2d8238485f0.png" alt="desc"></li>
+<li>导出：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/9b17cc0e-6d50-4283-865f-b4717d0d8ffc.png" alt="desc"></li>
+<li>导入：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/c5990369-62e7-43ae-bf76-8414e8af5b73.png" alt="desc"></li>
+<li>xsd测试数据：</li>
+</ul>
+<div data-v-md-line="372"><div class="v-md-pre-wrapper v-md-pre-wrapper-xml extra-class"><pre class="v-md-hljs-xml"><code><span class="hljs-comment">&lt;!--正确能通过测试的xml--&gt;</span>
+<span class="hljs-meta">&lt;?xml version=&quot;1.0&quot;?&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">note</span>
+    <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://www.w3school.com.cn&quot;</span>
+    <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span>
+<span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">&quot;http://www.w3school.com.cn note.xsd&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">to</span>&gt;</span>George<span class="hljs-tag">&lt;/<span class="hljs-name">to</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">from</span>&gt;</span>John<span class="hljs-tag">&lt;/<span class="hljs-name">from</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">heading</span>&gt;</span>Reminder<span class="hljs-tag">&lt;/<span class="hljs-name">heading</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span>Don&#x27;t forget the meeting!<span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">note</span>&gt;</span>
+
+<span class="hljs-comment">&lt;!--不能通过测试的xml--&gt;</span>
+<span class="hljs-meta">&lt;?xml version=&quot;1.0&quot;?&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">note</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">to</span>&gt;</span>George<span class="hljs-tag">&lt;/<span class="hljs-name">to</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">from</span>&gt;</span>John<span class="hljs-tag">&lt;/<span class="hljs-name">from</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">heading</span>&gt;</span>Reminder<span class="hljs-tag">&lt;/<span class="hljs-name">heading</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span>Don&#x27;t forget the meeting!<span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">note</span>&gt;</span>
+
+<span class="hljs-comment">&lt;!-- xsd --&gt;</span>
+<span class="hljs-meta">&lt;?xml version=&quot;1.0&quot;?&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">xs:schema</span>
+    <span class="hljs-attr">xmlns:xs</span>=<span class="hljs-string">&quot;http://www.w3.org/2001/XMLSchema&quot;</span>
+<span class="hljs-attr">targetNamespace</span>=<span class="hljs-string">&quot;http://www.w3school.com.cn&quot;</span>
+    <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://www.w3school.com.cn&quot;</span>
+<span class="hljs-attr">elementFormDefault</span>=<span class="hljs-string">&quot;qualified&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;note&quot;</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">xs:complexType</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">xs:sequence</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;to&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;xs:string&quot;</span>/&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;from&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;xs:string&quot;</span>/&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;heading&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;xs:string&quot;</span>/&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;body&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;xs:string&quot;</span>/&gt;</span>
+            <span class="hljs-tag">&lt;/<span class="hljs-name">xs:sequence</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">xs:complexType</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">xs:element</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">xs:schema</span>&gt;</span>
+</code></pre>
+</div></div><ul data-v-md-line="413">
+<li>服务编排时的使用场景：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/cbb53942-1cf9-4494-9ad0-537fa42ee9ab.png" alt="desc"><img src="http://172.20.21.108:10087/hsbSub/img/3c4f9933-b07a-40e6-8a6f-862da7f83471.png" alt="desc"><br>
+在此选择在服务资源管理new里面定义的xsd资源。</li>
+</ul>
+<h4 data-v-md-heading="_2-3-2-2-转换脚本" data-v-md-line="417">2.3.2.2 转换脚本</h4>
+<blockquote data-v-md-line="418">
+<p data-v-md-line="418">操作说明：xslt、jolt、groovy、soap请求报文脚本、soap响应报文脚本、密钥证书、变量的操作流程都一样这里就用xslt为例统一说下操作方法，其它可以此为参考。</p>
+</blockquote>
+<ul data-v-md-line="419">
+<li>导出操作：选中需要导出的xslt资源然后点击导出按钮即可<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/957fb3df-d4cd-4098-bb58-1dc20a25df12.png" alt="desc"></li>
+<li>新增xstl操作：点击导入.xslt<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/dc7fb358-1b9e-4671-a803-9b7372494907.png" alt="desc"><img src="http://172.20.21.108:10087/hsbSub/img/7b2f3d6c-7a96-4a6f-acfa-4c1a19902c06.png" alt="desc"></li>
+<li>导入操作：点击批量导入按钮然后上传导出的文件即可，<font color="red">需要说明的是由于资源英文名不可重复所以如果新导入的资源英文名与现有资源英文名重名的话系统会自动在新导入的资源的英文名后面追加一串数，且新导入的资源是没有所属目录的。</font><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/ec9ef7e0-519e-499a-ad7c-ff29aa01b839.png" alt="desc"><img src="http://172.20.21.108:10087/hsbSub/img/3c418d36-1188-4798-8d8e-e7b63c899a00.png" alt="desc"><br>
+<font color="red">导入导出操作说明：由于总线中很多资源数据都可以在各个项目上通用的，所以为了资源数据能够复用以及快速初始化新项目所以才设计了资源导入导出这两个功能。</font></li>
+<li>下载：就是下载xstl文件本身<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/c756439d-2d10-41df-a201-bd355904b9a4.png" alt="desc"></li>
+<li>编辑：对资源内容进行修改。</li>
+<li>测试：对输入（导入）脚本正确性经行校验，以xslt为例我们可以输入待转换脚本然后点击测试看右边是否会输出正确的转换后的xml<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/c128024a-1b2f-4c3a-8675-3b6f05a9dcd4.png" alt="desc"></li>
+<li>停用：停用该资源（编辑新流程的时候无法选择该资源）</li>
+</ul>
+<h5 data-v-md-heading="_2-3-2-2-1-xslt" data-v-md-line="432">2.3.2.2.1 xslt</h5>
+<blockquote data-v-md-line="433">
+<p data-v-md-line="433">资源作用：在某些业务场景下会出现三方的接口字段和平台给出的接口字段不一致的情况，该资源的作用就是将三方给出的xml转换为符合平台规范的xml（反之亦然）。</p>
+</blockquote>
+<p data-v-md-line="435">在流程中的使用：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/28787018-8a8b-4470-88ba-2ff7825eee6a.png" alt="desc"><br>
+入参出差格式选择xml然后选择对应的xslt资源<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/38069513-6afa-4a10-b967-fd47b3f3d415.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-3-2-2-2-jolt" data-v-md-line="439">2.3.2.2.2 jolt</h5>
+<blockquote data-v-md-line="440">
+<p data-v-md-line="440">资源说明：应用场景和xslt一样，但该资源转换的是json数据而非xml数据。</p>
+</blockquote>
+<p data-v-md-line="442">在流程中的使用：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/1d7c3843-1bfb-4152-964a-45b42a5122b2.png" alt="desc"><br>
+入参出参格式选择JSON，然后选择对应jolt脚本资源<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/82a6e46c-fba3-4e4e-a5ee-0e035b30608b.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-3-2-2-3-groovy" data-v-md-line="446">2.3.2.2.3 groovy</h5>
+<blockquote data-v-md-line="447">
+<p data-v-md-line="447">资源说明：Groovy是一种基于JVM（Java虚拟机）的敏捷开发语言，它能够与 Java 代码很好地结合用于扩展现有代码。在HSB中他的用处多用于读取以及操作HSB中消息头和消息体信息让我们在编排流程的时候根据这些信息判断该消息下一步流向或者在必要的时候对消息进行定义或修改(因为上述各种操作只有在具体业务流程编排的时候才知道怎么做，我们的总线开发人员是无法在开发程序时就预料到所有业务场景的，因此需要这么一个语言来提高总线在各种业务场景下的泛用性)。<br>
+groovy的语法(类java)这里就不做介绍，这里只对个别特有方法或变量的含义进行说明<br>
+headers: 指在总线中传输的消息的消息头（可类比为信封表面写的那些寄信人，邮箱等信息）,可以将其想象成为键值对，赋值操作很简单比如现在要给头加上一个a属性哪么只需要如下写“ headers.a=‘xxx’ ”即可。</p>
+</blockquote>
+<p data-v-md-line="451"><font color="red"><em><strong>headers属性保留字段（如果属性名字符合以下规则的则该属性不会生效）</strong></em><br>
+1 以“sys_”、“Camel”开头<br>
+2 等于以下字段(大小写敏感)：access_key、request_id、sign、timestamp<br>
+3等于以下字段（大小写不敏感）：Accept-Encoding、Content-Length、ResponseContext<br>
+4空字串</font><br>
+body: 指在总线中传输的消息的消息头（可类比为信封里面装的信），对body赋值也很简单body=value，这里的value可以时变量也可以是常量<br>
+<strong>XmlMapUtil.xml2map(body, false)：将body里面的xml转换为map键值对，后面的bool参数指是否需要在返回的map里加根节点键<br>
+throw new GroovyShellException(int(异常码), String(报错原因))：在groovy里面需要抛出错误时只能写这个异常，抛出其它异常系统是无法捕捉到的。<br>
+XpathUtil.getNodeValue(namespace, expression, reqxml)：这个方法可以根据xpath表达式获取到xml里对应的节点的值。namespace表示xml的命名空间如果没有写null，expression指xpath表达式（这里不展开自行百度），reqxml为需要解析的xml<br>
+GlobalVariableUtil.getValue(“”“isOpenHemoHisClient”“”)：这个方法是获取全局变量，至于这些变量的值可以在这个页面看到</strong><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/48f5d6fc-4c02-4d17-8029-8912545374dc.png" alt="desc"><br>
+在流程中的使用：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/3e054585-3df2-4563-be31-c5df976c1f63.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/990e6939-9e9c-4d23-8bcf-c1bcb92022e5.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-3-2-2-4-soap请求报文脚本" data-v-md-line="465">2.3.2.2.4 soap请求报文脚本</h5>
+<blockquote data-v-md-line="466">
+<p data-v-md-line="466">资源作用：他本质上是个freemark模板脚本，我们给定一个模板脚本这样就可以将soap请求数据插入模板脚本中使得数据的格式统一</p>
+</blockquote>
+<p data-v-md-line="468">使用:<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/6df9e0d0-271a-4705-b0be-6c76cde471d9.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-3-2-2-5-soap响应解析脚本" data-v-md-line="471">2.3.2.2.5 soap响应解析脚本</h5>
+<blockquote data-v-md-line="472">
+<p data-v-md-line="472">资源作用：他本质上是个grooovy脚本，用于解析三方的响应来判断我们这条消息是否有成功发送给三方或者三方是否成功处理了该消息。</p>
+</blockquote>
+<p data-v-md-line="474">在流程中的使用：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/a0f0dcd2-42e9-4471-92aa-1721a30ed1f0.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/a826dfb5-72d2-41a2-8c99-5d42697fcbdd.png" alt="desc"></p>
+<h4 data-v-md-heading="_2-3-2-3-密钥证书" data-v-md-line="478">2.3.2.3 密钥证书</h4>
+<h4 data-v-md-heading="_2-3-2-4-变量" data-v-md-line="479">2.3.2.4 变量</h4>
+<blockquote data-v-md-line="480">
+<p data-v-md-line="480">资源作用：用于服务编排时groovy脚本中经常使用到的一些固定的值，把这些值放在一起方便统一管理以及提高脚本常量的规范性。</p>
+</blockquote>
+<p data-v-md-line="482">具体用法如下（groovy语法中也有提到）：GlobalVariableUtil.getValue(“”“isOpenHemoHisClient”“”)<br>
+具体页面如下（操作都很常规就不一一截图介绍了）：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/670f552a-b841-4cac-bee5-5964408a8f68.png" alt="desc"></p>
+<ul data-v-md-line="485">
+<li>系统常用全局变量说明</li>
+</ul>
+<table data-v-md-line="487">
+<thead>
+<tr>
+<th style="text-align:left">序号</th>
+<th style="text-align:left">变量名</th>
+<th style="text-align:left">变量中文名</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">1</td>
+<td style="text-align:left">sysRabbitmqPrefetchCount</td>
+<td style="text-align:left">系统变量-rabbitmq消费者取消息条数</td>
+<td style="text-align:left">rabbitmq消费者取消息条数;用于非顺序消费时消费者一次取的消息条数<br />如果不设置该变更，默认取消息条数为200</td>
+</tr>
+</tbody>
+</table>
+<h4 data-v-md-heading="_2-3-2-5-消息队列" data-v-md-line="491">2.3.2.5 消息队列</h4>
+<blockquote data-v-md-line="492">
+<p data-v-md-line="492">资源作用：将上一个节点传递的消息发送到对应交换机，其它服务从队列中消费消息，以此完成整个服务流程。</p>
+</blockquote>
+<p data-v-md-line="494"><img src="http://172.20.21.108:10087/hsbSub/img/aec55e89-2135-448c-9e77-7b5321032822.png" alt="desc"><img src="http://172.20.21.108:10087/hsbSub/img/661b299f-6cd6-4056-b588-b307297044d4.png" alt="desc"><br>
+在这个服务中配置成生产者，选定对应的交换机,配置了对应消费者的服务就能接收到消息。<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/9aebdd93-a8bd-4ef1-a43d-44cb52e81a7f.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/beca9729-4e9f-4925-9eb8-1db77618485a.png" alt="desc"></p>
+<h5 data-v-md-heading="_2-3-2-5-1-交换机" data-v-md-line="498">2.3.2.5.1 交换机</h5>
+<p data-v-md-line="499"><img src="http://172.20.21.108:10087/hsbSub/img/c518d777-6d4f-42ce-bce2-f3522e4175e0.png" alt="desc"><br>
+上图名称、英文名称、所属目录的含义和其它资源没有区别。<br>
+rabbit服务：服务注册里注册的rabbitmq服务<br>
+类型：分为广播（fanout）、路由键匹配（topic）两种模式，广播会将消息发送到交换机里所有队列，路由键匹配会根据routingkey去匹配。<br>
+其它参数配置：可以通过deadLetterQueue=“deadLetterQueue1” &amp; skipQueueBind = false类似的方式为交换机配置参数。参考camel rabbitmq组件选项</p>
+<h5 data-v-md-heading="_2-3-2-5-2-队列" data-v-md-line="504">2.3.2.5.2 队列</h5>
+<p data-v-md-line="505"><img src="http://172.20.21.108:10087/hsbSub/img/b0841f14-89da-4c6e-afae-8855d6f58730.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/57204d7f-276e-4a01-a680-49e3d0071a8d.png" alt="desc"><br>
+点击队列管理就可以进入操作队列的页面，队列管理中是交换机所绑定的队列。<br>
+队列名称、英文名称和其他的资源一样。<br>
+队列路由key:队列绑定的routingkey，当交换机为路由键匹配模式时据此匹配交换机里的消息。<br>
+消费者名称/英文名称：服务编排时可以通过此名称找到对应队列<br>
+是否手工确认：<strong>消息是在得到确认（Acknowledged，ACK）后，从队列中移除的。默认情况下，消息确认是自动进行的，消息在发送给消费者后立即确认。为避免消息丢失，可以手工确认，自行管理消息接收确认的时机。</strong><br>
+是否独占：选择独占则一个队列只会被一个节点消费，非独占则可能被多个节点消费<br>
+是否顺序执行：顺序执行时消息的消费是有序的，消费完上一条消息才会消费下一条，非顺序执行时则是无序的</p>
+<h4 data-v-md-heading="_2-3-2-6-cdr" data-v-md-line="515">2.3.2.6 CDR</h4>
+<blockquote data-v-md-line="516">
+<p data-v-md-line="516">使用场景：用于消息写CDR数据库</p>
+</blockquote>
+<p data-v-md-line="518">组件配置说明：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/71688d10-bc27-4e3f-883e-741f99ba6a93.png" alt="desc"></p>
+<ul data-v-md-line="520">
+<li>
+<p data-v-md-line="520">表报文对照：报文节点=表虚拟名,不区分大小写</p>
+</li>
+<li>
+<p data-v-md-line="521">报文节点，是指定消息报中body中xml中的节点，不区分大小，节点名不用指定路径，只指定最末支节点名。</p>
+</li>
+<li>
+<p data-v-md-line="522">表虚拟名，是指将body中xml中的节点映射成一个虚拟表名，cdr表操作配置中使用该表虚拟名进行配置。</p>
+<p data-v-md-line="524">示例：detail=PT_OPERATION_EVENT，表示detial节点映射成PT_OPERATION_EVENT<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/c7cf02c6-b076-4c52-ac24-b316178759a8.png" alt="desc"></p>
+</li>
+<li>
+<p data-v-md-line="527">表字段对照资源名：写cdr表操作的配置资源名，在服务管理-&gt;服务资源管理-&gt;CDR功能下进行cdr资源的配置。</p>
+</li>
+<li>
+<p data-v-md-line="528">数据源：写cdr表操作使用的数据源，在服务管理-&gt;服务资源管理-&gt;数据库/api-&gt;数据源资源管理功能下进行数据库连接的配置。</p>
+</li>
+</ul>
+<h3 data-v-md-heading="_2-3-3-服务导入导出" data-v-md-line="530">2.3.3 服务导入导出</h3>
+<blockquote data-v-md-line="531">
+<p data-v-md-line="531">作用:当在一个新环境部署总线项目时，或者需要从一个环境复制服务到别的环境时，通过服务导入导出可以快速地配置出一个类似的服务。<font color="red">需要注意的是，服务中与消息队列相关的部分需要手动处理。</font></p>
+</blockquote>
+<p data-v-md-line="533">导出：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/6d0a3ce4-b27b-4e51-a51e-779db3add218.png" alt="desc"><br>
+导入：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/99e2aabf-fbe7-4760-bbf8-44401c2d0f9a.png" alt="desc"></p>
+<h2 data-v-md-heading="_2-4-任务调度" data-v-md-line="538">2.4 任务调度</h2>
+<h3 data-v-md-heading="_2-4-1-执行器管理" data-v-md-line="539">2.4.1 执行器管理</h3>
+<p data-v-md-line="540"><img src="http://172.20.21.108:10087/hsbSub/img/b5631883-1982-4cda-b3e0-a44926247340.png" alt="desc"><br>
+说明：新增执行器，其中AppName与服务后端配置AppName一致；机器地址自动获取将自动获取 http://{ip}:{port}/ 格式的地址，也可手动配置该格式地址，可省获取自动地址间隔时间。</p>
+<h3 data-v-md-heading="_2-4-2-任务管理" data-v-md-line="542">2.4.2 任务管理</h3>
+<p data-v-md-line="543"><img src="http://172.20.21.108:10087/hsbSub/img/f4072964-c130-4b77-82b9-f1a8142f6b59.png" alt="desc"></p>
+<h4 data-v-md-heading="_2-4-2-1-新增任务" data-v-md-line="544">2.4.2.1 新增任务</h4>
+<p data-v-md-line="545"><img src="http://172.20.21.108:10087/hsbSub/img/ad95c086-7e3a-48aa-949b-3ee6e065aec4.png" alt="desc"><br>
+任务参数说明：传入json串键serverName，将指定调用某发布服务；传入json串键body携带调用服务的报文</p>
+<div data-v-md-line="547"><div class="v-md-pre-wrapper v-md-pre-wrapper-language extra-class"><pre class="v-md-hljs-language"><code>任务参数示例：调用scheduled_tasks_delete_log服务:
+
+{serverName:'scheduled_tasks_delete_log',body:'&lt;soapenv:Envelope xmlns:soapenv=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot; xmlns:esb=&quot;http://esb.webservice&quot;&gt;
+   &lt;soapenv:Header/&gt;
+   &lt;soapenv:Body&gt;
+      &lt;esb:callBussiness&gt;
+         &lt;!--Optional:--&gt;
+         &lt;message&gt;&lt;![CDATA[&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;        
+&lt;reqxml&gt;
+	&lt;head&gt;
+		&lt;version&gt;1&lt;/version&gt;
+		&lt;timestamp&gt;20191001091221&lt;/timestamp&gt;
+	&lt;sign&gt;dmVyc2lvbj0xJnRpbWVzdGFtcD0yMDE5MTAwMTA5MTIyMSZyZXF1ZXN0X2lkPTEyMzQ1NiZzb3VyY2Vfc3lzdGVtPWhpcyZvYmplY3Rfc3lzdGVtPWxpcyZhY3Rpb249cmVxdWVzdF9jYWxsJmNvZGU9bGlzNDE=&lt;/sign&gt;
+		&lt;request_id&gt;123456&lt;/request_id&gt;
+		&lt;source_system&gt;yypt&lt;/source_system&gt;
+		&lt;object_system&gt;pacs&lt;/object_system&gt;
+		&lt;action&gt;appoint_info_call&lt;/action&gt;
+		&lt;code&gt;pacs_server&lt;/code&gt;
+	&lt;/head&gt;
+	&lt;body&gt;
+		&lt;data&gt;
+		&lt;/data&gt;
+	&lt;/body&gt;
+&lt;/reqxml&gt;
+
+        ]]&gt;
+&lt;/message&gt;
+      &lt;/esb:callBussiness&gt;
+   &lt;/soapenv:Body&gt;
+&lt;/soapenv:Envelope&gt;'}
+</code></pre>
+</div></div><h4 data-v-md-heading="_2-4-2-2-任务执行" data-v-md-line="580">2.4.2.2 任务执行</h4>
+<p data-v-md-line="581"><img src="http://172.20.21.108:10087/hsbSub/img/3d636e93-d718-4048-a7cd-15d722703703.png" alt="desc"><br>
+执行一次：立即执行一次任务<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/69eab834-aed7-4411-aa40-62124d9c3bfe.png" alt="desc"><br>
+任务参数为这次执行时的参数，必填，参见新增任务中的任务参数说明。<br>
+机器地址：为执行本次任务的引擎地址（如有多台引擎，可在指定地址的引擎执行），格式为：http://{ip}:{port}/<br>
+如为空，则平台自动选择引擎执行。</p>
+<h3 data-v-md-heading="_2-4-3-日志管理" data-v-md-line="588">2.4.3 日志管理</h3>
+<blockquote data-v-md-line="589">
+<p data-v-md-line="589">说明：查询执行日志，以及清理日志</p>
+</blockquote>
+<p data-v-md-line="591"><img src="http://172.20.21.108:10087/hsbSub/img/fe3f7a52-411a-4c32-b637-ec7b10789695.png" alt="desc"></p>
+<h1 data-v-md-heading="_3-数据字典管理" data-v-md-line="593">3 数据字典管理</h1>
+<blockquote data-v-md-line="594">
+<p data-v-md-line="594">维护平台中各系统的数据字典，配置字典代码及各系统间代码转换配置</p>
+</blockquote>
+<h2 data-v-md-heading="_3-1-数据字典维护" data-v-md-line="596">3.1 数据字典维护</h2>
+<p data-v-md-line="597"><img src="http://172.20.21.108:10087/hsbSub/img/0e36f22a-104e-42dd-abb6-7dec4c970285.png" alt="desc"></p>
+<h3 data-v-md-heading="_3-1-1-新增字典" data-v-md-line="599">3.1.1 新增字典</h3>
+<p data-v-md-line="600">选择接入系统，输入字典名称、字典标识，如有标准，输入标准代码和名称<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/6e98f099-aedf-430a-af06-cca156f0dc23.png" alt="desc"></p>
+<h3 data-v-md-heading="_3-1-2-新增字典值" data-v-md-line="603">3.1.2 新增字典值</h3>
+<p data-v-md-line="604">选择指定定典，进行字段值的新增<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/58603c56-8831-4dbe-a420-dd775555021b.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/60781ba1-d1d9-40fa-9133-05c5a7ff848b.png" alt="desc"></p>
+<h3 data-v-md-heading="_3-1-3-字典值调整" data-v-md-line="608">3.1.3 字典值调整</h3>
+<p data-v-md-line="609">对字典已有的字典值进行修改或删除。<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/309d4a55-c3a7-4a0d-9ea7-f4ff1158da1d.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/dff76cba-c53b-40d7-93e6-a07a3388709c.png" alt="desc"></p>
+<h3 data-v-md-heading="_3-1-4-字典导入" data-v-md-line="613">3.1.4 字典导入</h3>
+<blockquote data-v-md-line="614">
+<p data-v-md-line="614">导入根据模板生成的xls文件，批量新增字典信息。</p>
+</blockquote>
+<h3 data-v-md-heading="_3-1-5-模板下载" data-v-md-line="616">3.1.5 模板下载</h3>
+<blockquote data-v-md-line="617">
+<p data-v-md-line="617">下载字典导入xls模板</p>
+</blockquote>
+<h3 data-v-md-heading="_3-1-6-模板上传" data-v-md-line="619">3.1.6 模板上传</h3>
+<blockquote data-v-md-line="620">
+<p data-v-md-line="620">上传字典导入xls模板，初始化时使用</p>
+</blockquote>
+<h2 data-v-md-heading="_3-2-字典转换维护" data-v-md-line="622">3.2 字典转换维护</h2>
+<blockquote data-v-md-line="623">
+<p data-v-md-line="623">进行系统站字典值转换规则配置</p>
+</blockquote>
+<p data-v-md-line="625"><img src="http://172.20.21.108:10087/hsbSub/img/c4f2558c-22aa-4db0-a441-485456cf4011.png" alt="desc"></p>
+<h3 data-v-md-heading="_3-2-1-新增" data-v-md-line="627">3.2.1 新增</h3>
+<p data-v-md-line="628">新增加转换规则<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/a4c9f490-21aa-46d8-bef5-2051e104ba54.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/5ae3d378-319d-472a-bfe2-c827a3be1851.png" alt="desc"><br>
+<img src="http://172.20.21.108:10087/hsbSub/img/d9aa6e2a-dd25-42dc-9968-18e2045784d3.png" alt="desc"></p>
+<h1 data-v-md-heading="_4-soap代理发布" data-v-md-line="633">4 soap代理发布</h1>
+<blockquote data-v-md-line="634">
+<p data-v-md-line="634">根据不同的服务需求，发布不同的格式的wsdl、请求和响应报文。</p>
+</blockquote>
+<h2 data-v-md-heading="_4-1-soap发布配置" data-v-md-line="636">4.1 soap发布配置</h2>
+<ul data-v-md-line="637">
+<li>
+<p data-v-md-line="637">配置流程：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/c97e5dd2-a0ba-40c7-89b8-417dcc00681e.png" alt="desc"></p>
+</li>
+<li>
+<p data-v-md-line="639">脚本和模板列表：</p>
+<table data-v-md-line="641">
+<thead>
+<tr>
+<th style="text-align:left">序号</th>
+<th style="text-align:left">资源命名规范</th>
+<th style="text-align:left">中文名</th>
+<th style="text-align:left">用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">1</td>
+<td style="text-align:left">script_urlPatterns(/替换为_)</td>
+<td style="text-align:left">路径路径解析<br />如/services/HSBsoap路径解析</td>
+<td style="text-align:left">路径解析脚本，返回模板名</td>
+</tr>
+<tr>
+<td style="text-align:left">2</td>
+<td style="text-align:left">pt_模板名_wsdl</td>
+<td style="text-align:left">XXXwsdl<br />如：统一服务wsdl</td>
+<td style="text-align:left">wsdl文件</td>
+</tr>
+<tr>
+<td style="text-align:left">3</td>
+<td style="text-align:left">pt_模板名_req_xsd</td>
+<td style="text-align:left">XXX请求报校验</td>
+<td style="text-align:left">请求soap报文检验文件</td>
+</tr>
+<tr>
+<td style="text-align:left">4</td>
+<td style="text-align:left">pt_模板名_req</td>
+<td style="text-align:left">-</td>
+<td style="text-align:left">请求报文解析脚本</td>
+</tr>
+<tr>
+<td style="text-align:left">5</td>
+<td style="text-align:left">pt_模板名_tran</td>
+<td style="text-align:left">-</td>
+<td style="text-align:left">平台内部标准转发布服务返回数据</td>
+</tr>
+<tr>
+<td style="text-align:left">6</td>
+<td style="text-align:left">pt_模板名_resp</td>
+<td style="text-align:left">-</td>
+<td style="text-align:left">响应报文模板</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<h3 data-v-md-heading="_4-1-1-路径解析脚本" data-v-md-line="650">4.1.1 路径解析脚本</h3>
+<blockquote data-v-md-line="651">
+<p data-v-md-line="651">配置路径解析脚本，得到模板名</p>
+</blockquote>
+<p data-v-md-line="653">根据WebServlet 实现类指定的urlPatterns 路径进行路径解析处理。<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/ce401064-a4c6-44a2-990d-5a16055f5faa.png" alt="desc"><br>
+urlPatterns = “/services/esbsoap/”;<br>
+路径解析脚本为script_services_HSBsoap<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/bb196490-15fb-4b56-bfa1-b8a82b9f4211.png" alt="desc"></p>
+<ul data-v-md-line="659">
+<li>脚本开发说明：
+<ul data-v-md-line="660">
+<li>
+<p data-v-md-line="660">脚本中可使用的对象：</p>
+<div data-v-md-line="661"><table>
+ <tr>
+   <th>序号</th>
+   <th>对象名</th>
+   <th>对象类型</th>
+   <th>对象属性</th>
+   <th>对象说明</th>
+ </tr>
+ <tr>
+   <td>1</td>
+   <td rowspan="4">in</td>
+   <td rowspan="4">map</td>
+   <td>serverPath</td>
+   <td>服务路径名为urlPatterns与服务名之间的路径<br />如:/engine/services/esbsoap/unservice/mdb_servic e,urlPatterns为/services/esbsoap/，serverPath为unservice</td>
+ </tr>
+ <tr>
+   <td>2</td>
+   <td>serverName</td>
+   <td>服务名，访问url最后路径名<br /> 如：/engine/services/esbsoap/unservice/mdb_service，serverName为mdb_servic</td>
+ </tr>
+ <tr>
+  <td>3</td>
+   <td>url</td>
+   <td>访问路径，不包括ip和端口号,/engine/services/esbsoap/unservice/mdb_service</td>
+ </tr>
+ <tr>
+  <td>3</td>
+   <td>urlPatterns</td>
+   <td>websevlet实现类的urlPatterns,不含*号,如/services/esbsoap/</td>
+ </tr>
+</table>
+</div><div data-v-md-line="693"><table>
+ <tr>
+   <th>序号</th>
+   <th>对象名</th>
+   <th>对象类型</th>
+   <th>对象属性</th>
+   <th>对象说明</th>
+ </tr>
+ <tr>
+   <td>1</td>
+   <td rowspan="2">out</td>
+   <td rowspan="2">map</td>
+   <td>templteName</td>
+   <td>模板名，用于wsdl,模板,脚本名,在脚本 中根据路径 和服务名进行设置，templteName相同的路径，wsdl及报文格式是一套</td>
+ </tr>
+ <tr>
+   <td>2</td>
+   <td>callFlag</td>
+   <td>允许调用标志，如果为-1表示当前访问路径不允许访问，向调用者返回 错误信息</td>
+ </tr>
+</table>
+</div></li>
+</ul>
+</li>
+</ul>
+<div data-v-md-line="715"><div class="v-md-pre-wrapper v-md-pre-wrapper-xml extra-class"><pre class="v-md-hljs-xml"><code>
+<span class="hljs-comment">&lt;!--out.callFlag 为&quot;-1&quot;时，按soap规范返回错误信息--&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">soap:Envelope</span> <span class="hljs-attr">xmlns:soap</span>=<span class="hljs-string">&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;</span>&gt;</span>
+   <span class="hljs-tag">&lt;<span class="hljs-name">soap:Body</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">soap:Fault</span>&gt;</span>
+         <span class="hljs-tag">&lt;<span class="hljs-name">faultcode</span>&gt;</span>soap:Server<span class="hljs-tag">&lt;/<span class="hljs-name">faultcode</span>&gt;</span>
+         <span class="hljs-tag">&lt;<span class="hljs-name">faultstring</span>&gt;</span>/engine/services/esbsoap/unservice1/mdb_service无访问权限!<span class="hljs-tag">&lt;/<span class="hljs-name">faultstring</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">soap:Fault</span>&gt;</span>
+   <span class="hljs-tag">&lt;/<span class="hljs-name">soap:Body</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">soap:Envelope</span>&gt;</span>
+</code></pre>
+</div></div><div data-v-md-line="728"><div class="v-md-pre-wrapper v-md-pre-wrapper-groovy extra-class"><pre class="v-md-hljs-groovy"><code>
+<span class="hljs-comment">//脚本示例</span>
+out.templteName = <span class="hljs-string">&quot;&quot;</span>;
+out.callFlag = <span class="hljs-string">&quot;-1&quot;</span>;
+<span class="hljs-keyword">if</span> (<span class="hljs-keyword">in</span>.serverPath == <span class="hljs-string">&quot;unservice&quot;</span>) {
+  out.templteName = <span class="hljs-string">&quot;unservice&quot;</span>;
+  out.callFlag = <span class="hljs-string">&quot;0&quot;</span>;
+}
+</code></pre>
+</div></div><h3 data-v-md-heading="_4-1-2-wsdl模板" data-v-md-line="739">4.1.2 wsdl模板</h3>
+<p data-v-md-line="740">pt_模板名_wsdl，示例：pt_unservice_wsdl<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/09db0164-c573-4166-90ed-128a8d954e51.png" alt="desc"></p>
+<div data-v-md-line="742"><div class="v-md-pre-wrapper v-md-pre-wrapper-xml extra-class"><pre class="v-md-hljs-xml"><code><span class="hljs-comment">&lt;!--示例：统一服务wsdl--&gt;</span>
+<span class="hljs-comment">&lt;!--访问示例：http://127.0.0.1:8080/engine/services/esbsoap/unservice/mdb_service?wsdl--&gt;</span>
+
+<span class="hljs-meta">&lt;?xml version=&#x27;1.0&#x27; encoding=&#x27;UTF-8&#x27;?&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">wsdl:definitions</span> <span class="hljs-attr">xmlns:xsd</span>=<span class="hljs-string">&quot;http://www.w3.org/2001/XMLSchema&quot;</span> <span class="hljs-attr">xmlns:wsdl</span>=<span class="hljs-string">&quot;http://schemas.xmlsoap.org/wsdl/&quot;</span> <span class="hljs-attr">xmlns:tns</span>=<span class="hljs-string">&quot;http://HSB.webservice&quot;</span> <span class="hljs-attr">xmlns:soap</span>=<span class="hljs-string">&quot;http://schemas.xmlsoap.org/wsdl/soap/&quot;</span> <span class="hljs-attr">xmlns:ns1</span>=<span class="hljs-string">&quot;http://schemas.xmlsoap.org/soap/http&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;HSBWebService&quot;</span> <span class="hljs-attr">targetNamespace</span>=<span class="hljs-string">&quot;http://HSB.webservice&quot;</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:types</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">xs:schema</span> <span class="hljs-attr">xmlns:xs</span>=<span class="hljs-string">&quot;http://www.w3.org/2001/XMLSchema&quot;</span> <span class="hljs-attr">xmlns:tns</span>=<span class="hljs-string">&quot;http://HSB.webservice&quot;</span> <span class="hljs-attr">elementFormDefault</span>=<span class="hljs-string">&quot;unqualified&quot;</span> <span class="hljs-attr">targetNamespace</span>=<span class="hljs-string">&quot;http://HSB.webservice&quot;</span> <span class="hljs-attr">version</span>=<span class="hljs-string">&quot;1.0&quot;</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussiness&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;tns:callBussiness&quot;</span>/&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussinessResponse&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;tns:callBussinessResponse&quot;</span>/&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">xs:complexType</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussiness&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">xs:sequence</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">minOccurs</span>=<span class="hljs-string">&quot;0&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;message&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;xs:string&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">xs:sequence</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">xs:complexType</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">xs:complexType</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussinessResponse&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">xs:sequence</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">minOccurs</span>=<span class="hljs-string">&quot;0&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;data&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;tns:soapResponse&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">xs:sequence</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">xs:complexType</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">xs:complexType</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;soapResponse&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">xs:sequence</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">minOccurs</span>=<span class="hljs-string">&quot;0&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;msg&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;xs:string&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">xs:element</span> <span class="hljs-attr">minOccurs</span>=<span class="hljs-string">&quot;0&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;status_code&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;xs:string&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">xs:sequence</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">xs:complexType</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">xs:schema</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:types</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:message</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussiness&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:part</span> <span class="hljs-attr">element</span>=<span class="hljs-string">&quot;tns:callBussiness&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;parameters&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:part</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:message</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:message</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussinessResponse&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:part</span> <span class="hljs-attr">element</span>=<span class="hljs-string">&quot;tns:callBussinessResponse&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;parameters&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:part</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:message</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:portType</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;WebService&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:operation</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussiness&quot;</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:input</span> <span class="hljs-attr">message</span>=<span class="hljs-string">&quot;tns:callBussiness&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussiness&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:input</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:output</span> <span class="hljs-attr">message</span>=<span class="hljs-string">&quot;tns:callBussinessResponse&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussinessResponse&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:output</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:operation</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:portType</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:binding</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;HSBWebServiceSoapBinding&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;tns:WebService&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">soap:binding</span> <span class="hljs-attr">style</span>=<span class="hljs-string">&quot;document&quot;</span> <span class="hljs-attr">transport</span>=<span class="hljs-string">&quot;http://schemas.xmlsoap.org/soap/http&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:operation</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussiness&quot;</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">soap:operation</span> <span class="hljs-attr">soapAction</span>=<span class="hljs-string">&quot;&quot;</span> <span class="hljs-attr">style</span>=<span class="hljs-string">&quot;document&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:input</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussiness&quot;</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">soap:body</span> <span class="hljs-attr">use</span>=<span class="hljs-string">&quot;literal&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:input</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:output</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;callBussinessResponse&quot;</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">soap:body</span> <span class="hljs-attr">use</span>=<span class="hljs-string">&quot;literal&quot;</span>/&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:output</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:operation</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:binding</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:service</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;HSBWebService&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">wsdl:port</span> <span class="hljs-attr">binding</span>=<span class="hljs-string">&quot;tns:HSBWebServiceSoapBinding&quot;</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;WebServicePort&quot;</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">soap:address</span> <span class="hljs-attr">location</span>=<span class="hljs-string">&quot;http://localhost:8080/jcdsbws/proxy/lis_service&quot;</span>/&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:port</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:service</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">wsdl:definitions</span>&gt;</span>
+</code></pre>
+</div></div><h3 data-v-md-heading="_4-1-3-soap报文xsd检验脚本" data-v-md-line="804">4.1.3 soap报文xsd检验脚本</h3>
+<blockquote data-v-md-line="805">
+<p data-v-md-line="805">对请求报文按wsdl的规范进行检验,检验脚本的详细见2.4.1.2、xsd。</p>
+</blockquote>
+<p data-v-md-line="807">pt_模板名_req_xsd，如pt_unservice_req_xsd</p>
+<h3 data-v-md-heading="_4-1-4-请求报文解析脚本" data-v-md-line="809">4.1.4 请求报文解析脚本</h3>
+<blockquote data-v-md-line="810">
+<p data-v-md-line="810">将请求报文解析成平台内部服务所需要的map</p>
+</blockquote>
+<p data-v-md-line="812">pt_模板名_req ,示例：pt_unservice_req</p>
+<ul data-v-md-line="813">
+<li>脚本开发说明：
+<ul data-v-md-line="814">
+<li>脚本中可使用的对象：<br>
+<table><div data-v-md-line="816"> <tr>
+   <th>序号</th>
+   <th>对象名</th>
+   <th>对象类型</th>
+   <th>对象属性</th>
+   <th>对象说明</th>
+ </tr>
+ <tr>
+   <td>1</td>
+   <td rowspan="3">request</td>
+   <td rowspan="3">map</td>
+   <td>serviceName</td>
+   <td>服务名，访问url最后路径名 <br />如：/engine/services/esbsoap/unservice/mdb_service，serverName为mdb_servic</td>
+ </tr>
+ <tr>
+   <td>2</td>
+   <td>body</td>
+   <td>字符串请求报文体,soap所有节点</td>
+ </tr>
+ <tr>
+   <td>3</td>
+   <td>header</td>
+   <td>客户端访问时的http header</td>
+ </tr>
+</table>
+</div></li>
+</ul>
+</li>
+</ul>
+<h3 data-v-md-heading="_4-1-5-响应数据转换脚本" data-v-md-line="841">4.1.5 响应数据转换脚本</h3>
+<blockquote data-v-md-line="842">
+<p data-v-md-line="842">平台内部标准转发布服务返回数据: pt_模板名_tran，如pt_esb_tran</p>
+</blockquote>
+<p data-v-md-line="844">说明：</p>
+<ol data-v-md-line="845">
+<li>respHeader.ContentType ,指定返回报文的格式和字符集，如text/xml;charset=UTF-8，text/json;charset=UTF-8,根据返回报文要求配置。</li>
+<li>data.outflag 为输入是否进行模板格式化，如为prox,则返回报文不进行模板格式，直接将data.orgdata的内容作为响应报文。</li>
+</ol>
+<div data-v-md-line="848"><div class="v-md-pre-wrapper v-md-pre-wrapper-groovy extra-class"><pre class="v-md-hljs-groovy"><code><span class="hljs-comment">//代码示例：</span>
+<span class="hljs-keyword">import</span> java.lang.Integer;
+respHeader.ContentType=<span class="hljs-string">&quot;text/xml;charset=UTF-8&quot;</span>
+<span class="hljs-keyword">def</span> code = result.code;
+<span class="hljs-keyword">def</span> msg = result.msg;
+<span class="hljs-keyword">def</span> sub_msg = result.sub_msg;
+<span class="hljs-keyword">def</span> sub_code = result.sub_code;
+
+data.status_code = code;
+data.result_desc = msg;
+data.result_code = result.code;
+data.msg = msg;
+<span class="hljs-keyword">def</span> code1 = code.asInt();
+println code1;
+<span class="hljs-keyword">if</span> (code1 &gt;=<span class="hljs-number">0</span>) {
+  data.orgdata = result.biz_data;
+  data.outflag = <span class="hljs-string">&quot;prox&quot;</span>;
+}
+</code></pre>
+</div></div><h3 data-v-md-heading="_4-1-6-响应报文模板" data-v-md-line="869">4.1.6 响应报文模板</h3>
+<blockquote data-v-md-line="870">
+<p data-v-md-line="870">pt_模板名_resp—响应报文模板<br>
+根据模板格式化响应报文，pt_模板名_resp，如:pt_esb_resp，对esb路径的响应报文进行格式化的模板，模板中的变量为pt_模板名_tran返回的data中的属性。</p>
+</blockquote>
+<div data-v-md-line="873"><div class="v-md-pre-wrapper v-md-pre-wrapper-xml extra-class"><pre class="v-md-hljs-xml"><code><span class="hljs-comment">&lt;!--示例代码--&gt;</span>
+
+<span class="hljs-tag">&lt;<span class="hljs-name">soap:Envelope</span> <span class="hljs-attr">xmlns:soap</span>=<span class="hljs-string">&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;</span>&gt;</span>
+   <span class="hljs-tag">&lt;<span class="hljs-name">soap:Body</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">ns2:callBussinessResponse</span> <span class="hljs-attr">xmlns:ns2</span>=<span class="hljs-string">&quot;http://esb.webservice&quot;</span>&gt;</span>
+         <span class="hljs-tag">&lt;<span class="hljs-name">data</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">status_code</span>&gt;</span>${data.status_code}<span class="hljs-tag">&lt;/<span class="hljs-name">status_code</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">msg</span>&gt;</span>
+	            ${data.msg}
+          <span class="hljs-tag">&lt;/<span class="hljs-name">msg</span>&gt;</span>
+         <span class="hljs-tag">&lt;/<span class="hljs-name">data</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">ns2:callBussinessResponse</span>&gt;</span>
+   <span class="hljs-tag">&lt;/<span class="hljs-name">soap:Body</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">soap:Envelope</span>&gt;</span>
+</code></pre>
+</div></div><h3 data-v-md-heading="_4-1-7-soap代理测试" data-v-md-line="890">4.1.7 soap代理测试</h3>
+<h4 data-v-md-heading="_4-1-7-1-请求路径" data-v-md-line="891">4.1.7.1 请求路径</h4>
+<div data-v-md-line="892"><div class="v-md-pre-wrapper v-md-pre-wrapper-language extra-class"><pre class="v-md-hljs-language"><code>http://127.0.0.1:8080/engine/services/esbsoap/esb/mock_server
+</code></pre>
+</div></div><h4 data-v-md-heading="_4-1-7-2-请求报文" data-v-md-line="895">4.1.7.2 请求报文</h4>
+<div data-v-md-line="896"><div class="v-md-pre-wrapper v-md-pre-wrapper-xml extra-class"><pre class="v-md-hljs-xml"><code><span class="hljs-tag">&lt;<span class="hljs-name">soap:Envelope</span>
+    <span class="hljs-attr">xmlns:soap</span>=<span class="hljs-string">&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">soap:Body</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">ns2:callBussiness</span>
+            <span class="hljs-attr">xmlns:ns2</span>=<span class="hljs-string">&quot;http://HSB.webservice&quot;</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">message</span>&gt;</span>&lt;![CDATA[&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;reqxml&gt;
+    &lt;head&gt;
+        &lt;version&gt;1.0&lt;/version&gt;
+        &lt;timestamp&gt;20220818113759&lt;/timestamp&gt;
+        &lt;sign&gt;dmVyc2lvbj0xLjAmdGltZXN0YW1wPTIwMjIwODE4MTEzNzU5JnJlcXVlc3RfaWQ9OTM0OTUmc291cmNlX3N5c3RlbT1aU0omb2JqZWN0X3N5c3RlbT1oaXMjMDMmYWN0aW9uPXB1c2hTdGFmZk1lc3NhZ2U=&lt;/sign&gt;
+        &lt;request_id&gt;93495&lt;/request_id&gt;
+        &lt;source_system&gt;ZSJ&lt;/source_system&gt;
+        &lt;object_system&gt;his#03&lt;/object_system&gt;
+        &lt;action&gt;pushStaffMessage&lt;/action&gt;
+        &lt;access_key&gt;&lt;/access_key&gt;
+        &lt;code&gt;&lt;/code&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+        &lt;data&gt;
+            &lt;request&gt;
+                &lt;modelTypeCode&gt;50&lt;/modelTypeCode&gt;
+                &lt;pushModeId&gt;002777_63616&lt;/pushModeId&gt;
+                &lt;content&gt;
+                    &lt;staffId&gt;002777_63616&lt;/staffId&gt;
+                    &lt;hospId&gt;41053&lt;/hospId&gt;
+                    &lt;hospName&gt;太原市中心医院测试&lt;/hospName&gt;
+                    &lt;orgType&gt;5&lt;/orgType&gt;
+                    &lt;staffName&gt;张小三&lt;/staffName&gt;
+                    &lt;staffEnName/&gt;
+                    &lt;spell&gt;ZXS&lt;/spell&gt;
+                    &lt;staffCode&gt;CCC-AA01&lt;/staffCode&gt;
+                    &lt;staffNo&gt;CCC-AA01&lt;/staffNo&gt;
+                    &lt;genderCode&gt;1&lt;/genderCode&gt;
+                    &lt;genderDesc/&gt;
+                    &lt;brithday/&gt;
+                    &lt;nationCode/&gt;
+                    &lt;nationDesc/&gt;
+                    &lt;certificateType&gt;1&lt;/certificateType&gt;
+                    &lt;certificateNo/&gt;
+                    &lt;cardNo/&gt;
+                    &lt;marriageCode&gt;90&lt;/marriageCode&gt;
+                    &lt;marriageDesc/&gt;
+                    &lt;homeTown&gt;340000,340200,340272&lt;/homeTown&gt;
+                    &lt;photoBase64&gt; &lt;/photoBase64&gt;
+                    &lt;brithAddrProvice&gt;340000&lt;/brithAddrProvice&gt;
+                    &lt;brithAddrCity&gt;安徽省&lt;/brithAddrCity&gt;
+                    &lt;brithAddrCounty/&gt;
+                    &lt;brithAddrTownship/&gt;
+                    &lt;brithAddrVillage/&gt;
+                    &lt;brithAddrHouseNum&gt;xxxx&lt;/brithAddrHouseNum&gt;
+                    &lt;liveAddrProvice&gt;310000,310100,310118,310118003&lt;/liveAddrProvice&gt;
+                    &lt;liveAddrCity&gt;上海市/市辖区/青浦区/香花桥街道&lt;/liveAddrCity&gt;
+                    &lt;liveAddrCounty/&gt;
+                    &lt;liveAddrTownship/&gt;
+                    &lt;liveAddrVillage/&gt;
+                    &lt;liveAddrHouseNum&gt;xxxxx&lt;/liveAddrHouseNum&gt;
+                    &lt;phone&gt;1390000&lt;/phone&gt;
+                    &lt;officePhone&gt;1390000&lt;/officePhone&gt;
+                    &lt;postCode&gt;140000&lt;/postCode&gt;
+                    &lt;email/&gt;
+                    &lt;kindCode&gt;11&lt;/kindCode&gt;
+                    &lt;educationCode&gt;31&lt;/educationCode&gt;
+                    &lt;educationDesc/&gt;
+                    &lt;degreeCode&gt;4&lt;/degreeCode&gt;
+                    &lt;degreeDesc/&gt;
+                    &lt;professionalCode&gt;80&lt;/professionalCode&gt;
+                    &lt;professionalDesc/&gt;
+                    &lt;postionTypeCode/&gt;
+                    &lt;postionTypeDesc/&gt;
+                    &lt;positionCode&gt;235&lt;/positionCode&gt;
+                    &lt;positionDesc/&gt;
+                    &lt;healthStatusCode&gt;1&lt;/healthStatusCode&gt;
+                    &lt;healthStatusDesc/&gt;
+                    &lt;managerPosition&gt;07&lt;/managerPosition&gt;
+                    &lt;cftitle&gt;6&lt;/cftitle&gt;
+                    &lt;workDate&gt;2020-08-14&lt;/workDate&gt;
+                    &lt;drcDate&gt;2022-08-10&lt;/drcDate&gt;
+                    &lt;profile/&gt;
+                    &lt;stationed&gt;02&lt;/stationed&gt;
+                    &lt;academician&gt;02&lt;/academician&gt;
+                    &lt;expert&gt;02&lt;/expert&gt;
+                    &lt;allowance&gt;02&lt;/allowance&gt;
+                    &lt;nationPeople&gt;02&lt;/nationPeople&gt;
+                    &lt;technologyHeadPeople&gt;02&lt;/technologyHeadPeople&gt;
+                    &lt;responder&gt;02&lt;/responder&gt;
+                    &lt;phyPrcaticeTypeCode&gt;1&lt;/phyPrcaticeTypeCode&gt;
+                    &lt;phyPrcaticeTypeDesc/&gt;
+                    &lt;phyPrcaticeScopeCode&gt;A13&lt;/phyPrcaticeScopeCode&gt;
+                    &lt;phyPrcaticeScopeDesc/&gt;
+                    &lt;phyQualifiedName&gt;dasw&lt;/phyQualifiedName&gt;
+                    &lt;phyQualifiedCertifiedNo&gt;11112&lt;/phyQualifiedCertifiedNo&gt;
+                    &lt;phyPracticeCertificateNo&gt;12211&lt;/phyPracticeCertificateNo&gt;
+                    &lt;phyRegisterDate&gt;2022-08-03&lt;/phyRegisterDate&gt;
+                    &lt;phyRegisterValidDate&gt;2022-08-10&lt;/phyRegisterValidDate&gt;
+                    &lt;phyRegisterAddress&gt;生产&lt;/phyRegisterAddress&gt;
+                    &lt;psyDrugAuth&gt;10&lt;/psyDrugAuth&gt;
+                    &lt;formation&gt;4&lt;/formation&gt;
+                    &lt;medicalTitle/&gt;
+                    &lt;medicalId/&gt;
+                    &lt;ssLevel&gt;5&lt;/ssLevel&gt;
+                    &lt;antibioticLevelCode&gt;2&lt;/antibioticLevelCode&gt;
+                    &lt;antibioticLevelDesc/&gt;
+                    &lt;moreHospPhy&gt;02&lt;/moreHospPhy&gt;
+                    &lt;phaPracticeCertificateCode&gt;dadas1111&lt;/phaPracticeCertificateCode&gt;
+                    &lt;phaPrcaticeTypeCode&gt;03&lt;/phaPrcaticeTypeCode&gt;
+                    &lt;phaPrcaticeTypeDesc/&gt;
+                    &lt;phaPrcaticeScopeCode&gt;01&lt;/phaPrcaticeScopeCode&gt;
+                    &lt;phaPrcaticeScopeDesc/&gt;
+                    &lt;phaRegisterDate&gt;2022-08-02&lt;/phaRegisterDate&gt;
+                    &lt;phaRegisterValidDate&gt;2022-08-30&lt;/phaRegisterValidDate&gt;
+                    &lt;phaRegisterAddress/&gt;
+                    &lt;hocusAuth&gt;02&lt;/hocusAuth&gt;
+                    &lt;phaCertifiedNo/&gt;
+                    &lt;expJobLevelCode/&gt;
+                    &lt;expJobLevelDesc/&gt;
+                    &lt;expGoodArea/&gt;
+                    &lt;account&gt;CCC-AA01&lt;/account&gt;
+                    &lt;locked&gt;0&lt;/locked&gt;
+                    &lt;remark&gt;ddddd&lt;/remark&gt;
+                    &lt;createBy&gt;1&lt;/createBy&gt;
+                    &lt;createTime&gt;2022-08-18 09:33:42&lt;/createTime&gt;
+                    &lt;modifyBy&gt;1&lt;/modifyBy&gt;
+                    &lt;modifyTime&gt;2022-08-18 09:33:42&lt;/modifyTime&gt;
+                    &lt;orderNum&gt;0&lt;/orderNum&gt;
+                    &lt;effective&gt;1&lt;/effective&gt;
+                    &lt;createByName&gt;超级管理员&lt;/createByName&gt;
+                    &lt;modifyByName&gt;超级管理员&lt;/modifyByName&gt;
+                    &lt;politicalStatus&gt;2&lt;/politicalStatus&gt;
+                    &lt;joinpartisanDate&gt;2021-08-06&lt;/joinpartisanDate&gt;
+                    &lt;proQualiCertificate/&gt;
+                    &lt;entryDate&gt;2020-02-07&lt;/entryDate&gt;
+                    &lt;jobCategory/&gt;
+                    &lt;whetherContract&gt;02&lt;/whetherContract&gt;
+                    &lt;internship&gt;02&lt;/internship&gt;
+                    &lt;wb&gt;XID&lt;/wb&gt;
+                    &lt;homeTownDesc&gt;安徽省/芜湖市/安徽芜湖长江大桥经济开发区&lt;/homeTownDesc&gt;
+                    &lt;pwdplaintext/&gt;
+                    &lt;openid/&gt;
+                    &lt;businessDeptList&gt;
+                        &lt;businessDeptData&gt;
+                            &lt;orgId&gt;002777_63594&lt;/orgId&gt;
+                            &lt;orgCode&gt;csnk111&lt;/orgCode&gt;
+                            &lt;orgType&gt;8&lt;/orgType&gt;
+                            &lt;orgName&gt;内科-测试&lt;/orgName&gt;
+                        &lt;/businessDeptData&gt;
+                    &lt;/businessDeptList&gt;
+                &lt;/content&gt;
+            &lt;/request&gt;
+        &lt;/data&gt;
+    &lt;/body&gt;
+&lt;/reqxml&gt;]]&gt;
+            <span class="hljs-tag">&lt;/<span class="hljs-name">message</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">ns2:callBussiness</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">soap:Body</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">soap:Envelope</span>&gt;</span>
+</code></pre>
+</div></div><h1 data-v-md-heading="_5-如何用groovy脚本操作redis缓存" data-v-md-line="1055">5 如何用Groovy脚本操作Redis缓存</h1>
+<h2 data-v-md-heading="_5-1-配置缓存信息" data-v-md-line="1056">5.1 配置缓存信息</h2>
+<p data-v-md-line="1057"><img src="http://172.20.21.108:10087/hsbSub/img/861d3c31-611a-4a4b-b3df-bcedc7fe5581.png" alt="desc"><br>
+<strong><font color="red">特别说明：对缓存配置的更新和删除操作都会使得该缓存的原有的数据被清空请谨慎操作。</font></strong></p>
+<h2 data-v-md-heading="_5-2-在groovy脚本中的使用" data-v-md-line="1060">5.2 在groovy脚本中的使用</h2>
+<blockquote data-v-md-line="1061">
+<p data-v-md-line="1061">在了解如何使用工具类之前得先了解缓存在程序中的结构，具体示意图如下：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/69b2d958-bd4b-4662-a46d-818a9e04a712.png" alt="desc"><br>
+上图中的缓存一，缓存二，缓存三就对应5.1配置中的缓存英文名配置项，如果在调用方法时传入了没有配置的缓存名称时方法会统一返回一个IllegalArgumentException错误内容为：“未查询到名为cacheName的缓存配置，请到资源管理界面检查相关缓存是否正确配置”，导致该异常的原因可能是因为没有在5.1步骤配置也可能因为配置信息有问题（例如engine无法连接到redis，账号密码配置错误，redis程序未启动等）</p>
+</blockquote>
+<ul data-v-md-line="1065">
+<li>工具类以及方法的介绍:</li>
+<li>工具类：com.yinhai.engine.med.cache.HsbCacheUtils</li>
+<li>方法参数说明：<br>
+cacheName: 缓存名称，固定字符串类型<br>
+key：缓存下键值对的键，固定字符串类型<br>
+value：缓存下键值对的值，所有实现了序列化接口的对象<br>
+ttl：缓存存活时长单位为秒</li>
+<li>方法：<div data-v-md-line="1073"><div class="v-md-pre-wrapper v-md-pre-wrapper-java extra-class"><pre class="v-md-hljs-java"><code>//通过缓存名称和键值对中的键来获取对应的值
+com.yinhai.engine.med.cache.HsbCacheUtils#getValue (String cacheName, String key)
+//设置有过期时间的键值对，时间单位为秒
+com.yinhai.engine.med.cache.HsbCacheUtils#setWithExpire(String cacheName, String key, Serializable value, Long ttlSeconds)
+//设置永不过期的键值对
+com.yinhai.engine.med.cache.HsbCacheUtils#setWithoutExpire(String cacheName, String key, Serializable value)
+//删除指定键值对
+com.yinhai.engine.med.cache.HsbCacheUtils#deleteByKey(String cacheName, String key)
+//清空指定cache但不删除
+com.yinhai.engine.med.cache.HsbCacheUtils#clearCacheByCacheName(String cacheName)
+</code></pre>
+</div></div></li>
+</ul>
+<h2 data-v-md-heading="_5-3示例脚本" data-v-md-line="1085">5.3	示例脚本</h2>
+<p data-v-md-line="1086"><img src="http://172.20.21.108:10087/hsbSub/img/694c4e72-601b-48b1-93d2-6095e1097044.png" alt="desc"></p>
+<h1 data-v-md-heading="_6-如何使用厂商服务验证功能" data-v-md-line="1088">6 如何使用厂商服务验证功能</h1>
+<h2 data-v-md-heading="_6-1-功能描述以及位置" data-v-md-line="1089">6.1 功能描述以及位置</h2>
+<blockquote data-v-md-line="1090">
+<p data-v-md-line="1090">描述：在项目初期为了验证三方给出的服务是否按照平台文档上的标准发布就可以使用该功能，如果验证通过则表示没问题反之则需要三方厂商进行响应调整。<br>
+位置：<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/b5fb0b14-b986-44da-b200-32c7f768098f.png" alt="desc"></p>
+</blockquote>
+<h2 data-v-md-heading="_6-2-如何使用" data-v-md-line="1094">6.2 如何使用</h2>
+<ol data-v-md-line="1095">
+<li>在标号1 的位置输入三方厂商给出的服务的wsdl地址</li>
+<li>在标号2处选择需要校验的服务（总线接口服务就是指普通的接口例如检验检查申请单，总线主数据接口指科室人员推送等接口，这类接口的响应数据和总线服务接口不一样）</li>
+<li>点击标号3处的生成请求模板按钮后会在标号4处生成一个请求三方服务的模板</li>
+<li>点击标号5验证按钮会显示验证通过或者失败，如果失败则表示服务不符合平台标准</li>
+<li>点击标号6会向三方服务发送请求，如果有响应会显示在标号7中</li>
+<li>点击标号8验证按钮，如果成功则表示三方厂商的响应符合平台标准如果失败则不符合<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/9f36bfdf-ec8a-4335-b71a-7938469b06ba.png" alt="desc"></li>
+</ol>
+<p data-v-md-line="1103">下图中的soap请求标准模板和soap响应标准模板为总线程序给出的一个示例<br>
+<img src="http://172.20.21.108:10087/hsbSub/img/6569dcf1-0dd6-46e9-bb0d-9052d4ded700.png" alt="desc"></p>

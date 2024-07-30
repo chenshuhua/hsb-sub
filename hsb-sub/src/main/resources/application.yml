@@ -1,0 +1,48 @@
+server:
+  port: 10087
+  servlet:
+    context-path: '/hsbSub'
+spring:
+  application:
+    name: hsbSub
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 1200MB
+      max-request-size: 1200MB
+      file-size-threshold: 20MB
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://127.0.0.1:5566/hsb_sub?connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+  web:
+    resources:
+      static-locations: classpath:/template
+mybatis:
+  mapper-locations: classpath*:mapper/*.xml
+  type-aliases-package: com.yinhai.hsbsub.entity
+pagehelper:
+  reasonable: false
+  supportMethodsArguments: true
+  params: count=countSql
+  # 默认false,当为true时，自动检验适合的数据库
+  auto-dialect: true
+  # 设置为 true 时，允许在运行时根据多数据源自动识别对应方言的分页 （不支持自动选择sqlserver2012，只能使用sqlserver）所以一定要加上
+  auto-runtime-dialect: true
+logging:
+  level:
+    com.yinhai.hsbsub.repository: error
+
+hsb:
+  auth-code:
+    - hsb_dev_cyl
+    - hsb_dev_yf
+    - hsb_dev_lj
+
+  file:
+    program-file: "/u01/yh-hsb-sub/file-resource/program/"
+    img-file: "/u01/yh-hsb-sub/file-resource/logImg/"
+    log-backup: "/u01/yh-hsb-sub/file-resource/backup/"
+    file-host: "http://172.20.21.108:10087/hsbSub/"
